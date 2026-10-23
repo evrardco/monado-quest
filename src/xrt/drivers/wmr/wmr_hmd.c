@@ -1664,25 +1664,25 @@ static bool
 wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, struct xrt_device **out_handtracker)
 {
 	// We always have at least 3dof HMD tracking
-	bool dof3_enabled = true;
+	const bool dof3_enabled = true;
 
 	// Decide whether to initialize the SLAM tracker
-	bool slam_wanted = debug_get_bool_option_wmr_slam();
+	const bool slam_wanted = debug_get_bool_option_wmr_slam();
 #ifdef XRT_FEATURE_SLAM
-	bool slam_supported = true;
+	const bool slam_supported = true;
 #else
-	bool slam_supported = false;
+	const bool slam_supported = false;
 #endif
-	bool slam_enabled = slam_supported && slam_wanted;
+	const bool slam_enabled = slam_supported && slam_wanted;
 
 	// Decide whether to initialize the hand tracker
-	bool hand_wanted = debug_get_bool_option_wmr_handtracking();
+	const bool hand_wanted = debug_get_bool_option_wmr_handtracking();
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	bool hand_supported = true;
+	const bool hand_supported = true;
 #else
-	bool hand_supported = false;
+	const bool hand_supported = false;
 #endif
-	bool hand_enabled = hand_supported && hand_wanted;
+	const bool hand_enabled = hand_supported && hand_wanted;
 
 	wh->base.supported.orientation_tracking = dof3_enabled || slam_enabled;
 	wh->base.supported.position_tracking = slam_enabled;
@@ -1741,7 +1741,7 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 
 	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
-	if (slam_enabled && hand_enabled) {
+	if (slam_sinks && hand_sinks) {
 		struct xrt_frame_sink *entry_cam0_sink = NULL;
 		struct xrt_frame_sink *entry_cam1_sink = NULL;
 
@@ -1751,9 +1751,9 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 		entry_sinks = *slam_sinks;
 		entry_sinks.cams[0] = entry_cam0_sink;
 		entry_sinks.cams[1] = entry_cam1_sink;
-	} else if (slam_enabled) {
+	} else if (slam_sinks) {
 		entry_sinks = *slam_sinks;
-	} else if (hand_enabled) {
+	} else if (hand_sinks) {
 		entry_sinks = *hand_sinks;
 	} else {
 		entry_sinks = (struct xrt_slam_sinks){0};
