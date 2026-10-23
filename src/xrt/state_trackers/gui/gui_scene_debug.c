@@ -343,21 +343,21 @@ on_u16_arr(const char *name, void *ptr)
 static void
 on_timing(const char *name, void *ptr)
 {
-	struct u_var_timing *frametime_arr = ptr;
-	struct u_var_f32_arr *f32_arr = &frametime_arr->values;
-	int index = *f32_arr->index_ptr;
-	int length = f32_arr->length;
+	const struct u_var_timing *frametime_arr = ptr;
+	const struct u_var_f32_arr *f32_arr = &frametime_arr->values;
+	const int index = *f32_arr->index_ptr;
+	const int length = f32_arr->length;
 	float *arr = (float *)f32_arr->data;
+	if (arr == NULL || length == 0) {
+		return;
+	}
 
 	ImVec2 region = igGetContentRegionAvail();
 	ImVec2 graph_size = {region.x, 200};
 
-	float stats_min = FLT_MAX;
 	float stats_max = 0;
 
 	for (int f = 0; f < length; f++) {
-		if (arr[f] < stats_min)
-			stats_min = arr[f];
 		if (arr[f] > stats_max)
 			stats_max = arr[f];
 	}
