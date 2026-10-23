@@ -327,8 +327,8 @@ append_randr_display(struct comp_window_direct_randr *w,
 
 	if (mode_info == NULL) {
 		COMP_ERROR(w->base.base.c, "No mode with id %d found??", output_modes[0]);
+		return;
 	}
-
 
 	struct comp_window_direct_randr_display d = {
 	    .name = U_TYPED_ARRAY_CALLOC(char, name_len + 1),
