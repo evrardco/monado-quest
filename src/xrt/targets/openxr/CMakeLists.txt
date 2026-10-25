@@ -149,8 +149,3 @@ elseif(NOT ANDROID)
 		RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
 		)
 endif()
-
-# Optional debug ui
-if(XRT_FEATURE_CLIENT_DEBUG_GUI)
-	target_link_libraries(${RUNTIME_TARGET} PRIVATE aux_util_debug_gui)
-endif()
