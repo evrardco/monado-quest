@@ -9,7 +9,6 @@
  * @ingroup ipc
  */
 
-#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_os.h"
 
 #include "util/u_debug.h"
@@ -23,6 +22,7 @@
 
 #include "server/ipc_server_interface.h"
 
+#include "target_ipc_defaults.h"
 #include "target_lists.h"
 
 DEBUG_GET_ONCE_BOOL_OPTION(exit_on_disconnect, "IPC_EXIT_ON_DISCONNECT", false)

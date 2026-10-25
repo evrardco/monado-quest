@@ -391,8 +391,8 @@ option_with_deps(XRT_BUILD_DRIVER_PIMAX_P2 "Enable Pimax P2 driver" DEPENDS XRT_
 option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
 
 option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will not be linked into any final targets" ON)
-set(XRT_IPC_MSG_SOCK_FILENAME monado_comp_ipc CACHE STRING "Service socket filename")
-set(XRT_IPC_SERVICE_PID_FILENAME monado.pid CACHE STRING "Service pidfile filename")
+set(XRT_IPC_MSG_SOCK_FILENAME monado_comp_ipc CACHE STRING "Socket filename of Monado's default service and runtimes")
+set(XRT_IPC_SERVICE_PID_FILENAME monado.pid CACHE STRING "Pidfile filename of Monado's default service")
 set(XRT_OXR_RUNTIME_SUFFIX monado CACHE STRING "OpenXR client library suffix")
 set(XRT_OPENVR_STATE_TRACKER_INSTALL_DIR "share" CACHE STRING "Install the OpenVR state tracker to this directory root.")
 

@@ -8,8 +8,6 @@
  * @ingroup ipc
  */
 
-#include "xrt/xrt_config_build.h"
-
 #include "util/u_file.h"
 
 #include "client/ipc_client.h"
@@ -17,6 +15,8 @@
 
 #include "ipc_client_generated.h"
 #include "xrt/xrt_results.h"
+
+#include "target_ipc_defaults.h"
 
 #include <getopt.h>
 #include <ctype.h>

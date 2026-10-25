@@ -7,11 +7,11 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
-#include "xrt/xrt_config_build.h"
-
 #include "util/u_trace_marker.h"
 
 #include "server/ipc_server_interface.h"
+
+#include "target_ipc_defaults.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_main.h>

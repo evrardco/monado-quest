@@ -117,12 +117,6 @@ target_include_directories(
 	ipc_client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
 if(WIN32)
-	if(XRT_SERVICE_EXECUTABLE)
-		target_compile_definitions(
-			ipc_client INTERFACE XRT_SERVICE_EXECUTABLE="${XRT_SERVICE_EXECUTABLE}.exe"
-			)
-	endif()
-
 	target_link_libraries(ipc_client PRIVATE winmm)
 endif()
 target_link_libraries(ipc_client PRIVATE aux_util ipc_shared base)

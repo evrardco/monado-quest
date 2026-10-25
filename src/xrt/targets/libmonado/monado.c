@@ -11,7 +11,6 @@
 
 #include "monado.h"
 
-#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_results.h"
 
@@ -24,6 +23,8 @@
 #include "client/ipc_client_connection.h"
 #include "client/ipc_client.h"
 #include "ipc_client_generated.h"
+
+#include "target_ipc_defaults.h"
 
 #include <limits.h>
 #include <stdint.h>
