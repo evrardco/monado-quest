@@ -338,7 +338,7 @@ init_all(struct ipc_server *s,
 	 */
 	s->process = u_process_create_if_not_running();
 	if (!s->process) {
-		IPC_ERROR(s, "monado-service is already running! Use XRT_LOG=trace for more information.");
+		IPC_ERROR(s, "Another service instance is already running! Use XRT_LOG=trace for more information.");
 		xret = XRT_ERROR_IPC_SERVICE_ALREADY_RUNNING;
 	}
 	IPC_CHK_WITH_GOTO(s, xret, "u_process_create_if_not_running", error);

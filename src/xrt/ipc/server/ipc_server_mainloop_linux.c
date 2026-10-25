@@ -131,10 +131,10 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 		U_LOG_E("Could not bind socket to path %s: %s. Is the service running already?", sock_file,
 		        strerror(errno));
 #ifdef XRT_HAVE_SYSTEMD
-		U_LOG_E("Or, is the systemd unit monado.socket or monado-dev.socket active?");
+		U_LOG_E("Or, is a systemd socket unit for this service already active?");
 #endif
 		if (errno == EADDRINUSE) {
-			U_LOG_E("If monado-service is not running, delete %s before starting a new instance",
+			U_LOG_E("If no service is listening on this socket, delete %s before starting a new instance",
 			        sock_file);
 		}
 		goto err_close;

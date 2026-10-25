@@ -395,14 +395,10 @@ ipc_client_connection_init(struct ipc_connection *ipc_c,
 	if (!ipc_client_socket_connect(ipc_c)) {
 #endif
 		IPC_ERROR(ipc_c,
-		          "Failed to connect to monado service process\n\n"
+		          "Failed to connect to the service process\n\n"
 		          "###\n"
 		          "#\n"
 		          "# Please make sure that the service process is running\n"
-		          "#\n"
-		          "# It is called \"monado-service\"\n"
-		          "# In build trees, it is located "
-		          "\"build-dir/src/xrt/targets/service/monado-service\"\n"
 		          "#\n"
 		          "###");
 		os_mutex_destroy(&ipc_c->mutex);
