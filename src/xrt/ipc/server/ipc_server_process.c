@@ -16,6 +16,7 @@
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_compositor.h"
+#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_os.h"
 
@@ -336,7 +337,7 @@ init_all(struct ipc_server *s,
 	 * @todo NULL is also returned when the pidfile can't be created, for example without a runtime dir, which is
 	 * then reported as an already running service.
 	 */
-	s->process = u_process_create_if_not_running();
+	s->process = u_process_create_if_not_running(XRT_IPC_SERVICE_PID_FILENAME);
 	if (!s->process) {
 		IPC_ERROR(s, "Another service instance is already running! Use XRT_LOG=trace for more information.");
 		xret = XRT_ERROR_IPC_SERVICE_ALREADY_RUNNING;
