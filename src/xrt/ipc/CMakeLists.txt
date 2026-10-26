@@ -119,7 +119,7 @@ target_include_directories(
 if(WIN32)
 	if(XRT_SERVICE_EXECUTABLE)
 		target_compile_definitions(
-			ipc_client PUBLIC XRT_SERVICE_EXECUTABLE="${XRT_SERVICE_EXECUTABLE}.exe"
+			ipc_client INTERFACE XRT_SERVICE_EXECUTABLE="${XRT_SERVICE_EXECUTABLE}.exe"
 			)
 	endif()
 
