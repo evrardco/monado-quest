@@ -1,5 +1,5 @@
 // Copyright 2020, Collabora, Ltd.
-// Copyright 2024-2025, NVIDIA CORPORATION.
+// Copyright 2024-2026, NVIDIA CORPORATION.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,6 +9,7 @@
  * @ingroup ipc
  */
 
+#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_os.h"
 
 #include "util/u_debug.h"
@@ -48,6 +49,8 @@ main(int argc, char *argv[])
 	            .open = U_DEBUG_GUI_OPEN_AUTO,
 	        },
 	    .exit_on_disconnect = debug_get_bool_option_exit_on_disconnect(),
+	    .socket_filename = XRT_IPC_MSG_SOCK_FILENAME,
+	    .pid_filename = XRT_IPC_SERVICE_PID_FILENAME,
 	};
 
 	int ret = ipc_server_main(argc, argv, &ismi);
