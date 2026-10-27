@@ -96,6 +96,8 @@ struct t_blob
 	float brightness;
 };
 
+struct xrt_frame;
+
 struct t_blob_observation
 {
 	struct t_blobwatch *source;
@@ -112,6 +114,14 @@ struct t_blob_observation
 	int64_t timestamp_ns;
 	struct t_blob *blobs;
 	uint32_t num_blobs;
+
+	/*!
+	 * Optional reference to the frame the blobs were extracted from, may be NULL.
+	 *
+	 * The reference is owned by the observation: the blob sink receiving it takes ownership and must release it
+	 * with @ref xrt_frame_reference (or pass it on to another sink that does).
+	 */
+	struct xrt_frame *frame;
 };
 
 /*!

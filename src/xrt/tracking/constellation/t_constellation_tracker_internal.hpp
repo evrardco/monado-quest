@@ -170,6 +170,7 @@ public: // Methods
 		    .timestamp_ns = this->timestamp_ns,
 		    .blobs = const_cast<t_blob *>(this->blobs),
 		    .num_blobs = this->blob_count,
+		    .frame = nullptr,
 		};
 
 		return obs;

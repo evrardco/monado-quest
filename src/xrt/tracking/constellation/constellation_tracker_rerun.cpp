@@ -8,7 +8,6 @@
  */
 
 #include "constellation_tracker_rerun.hpp"
-#include "constellation_tracker_rerun_blobwatch.h"
 
 #include "math/m_api.h"
 
@@ -340,16 +339,3 @@ RerunContext::logImageFrame(const ConstellationTracker &tracker,
 }
 
 }; // namespace xrt::tracking::constellation
-
-void
-constellation_tracker_rerun_blobwatch_push_frame(struct t_constellation_tracker *tracker,
-                                                 uint32_t mosaic_index,
-                                                 uint32_t camera_index,
-                                                 struct xrt_frame *frame)
-{
-	ConstellationTracker *ct = ConstellationTracker::Get(tracker);
-
-	if (ct->rerun_stream) {
-		ct->rerun_stream->logImageFrame(*ct, mosaic_index, camera_index, *frame);
-	}
-}

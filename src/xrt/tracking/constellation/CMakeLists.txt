@@ -68,7 +68,6 @@ if(XRT_FEATURE_RERUN)
 			constellation_rerun_common.hpp
 			constellation_tracker_rerun.cpp
 			constellation_tracker_rerun.hpp
-			constellation_tracker_rerun_blobwatch.h
 			optimizer/rig_calibration_rerun.cpp
 			optimizer/rig_calibration_rerun.hpp
 			optimizer/sensor_fusion_rerun.cpp

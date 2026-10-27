@@ -1599,6 +1599,18 @@ constellation_tracker_camera_push_blobs(t_blob_sink *tbs, t_blob_observation *tb
 
 	CT_TRACE(tracker, "Received blob observation at %" PRIi64 " with %u blobs", tbo->timestamp_ns, tbo->num_blobs);
 
+#ifdef XRT_FEATURE_RERUN
+	if (tracker->rerun_stream && tbo->frame != nullptr) {
+		auto mosaic = camera->mosaic.lock();
+		if (mosaic) {
+			tracker->rerun_stream->logImageFrame(*tracker, mosaic->index, camera->index, *tbo->frame);
+		}
+	}
+#endif
+
+	// We own the frame reference, and don't need it past this point.
+	xrt_frame_reference(&tbo->frame, nullptr);
+
 	if (tbo->num_blobs == 0) {
 		CT_TRACE(tracker, "No blobs in observation, skipping processing");
 		return;

@@ -583,10 +583,6 @@ rift_open_system_impl(struct xrt_builder *xb,
 				continue;
 			}
 
-#ifdef XRT_FEATURE_RERUN
-			t_rift_blobwatch_set_rerun_data(*blobwatch, rb->constellation_tracker, 0, rb->num_sensors);
-#endif
-
 			u_sink_create_format_converter(xfctx, XRT_FORMAT_L8, frame_sink, &frame_sink);
 
 			if (!u_sink_simple_queue_create(xfctx, frame_sink, &frame_sink)) {
