@@ -302,7 +302,7 @@ struct t_constellation_tracker_led_model
 	//! The LEDs in this model.
 	struct t_constellation_tracker_led *leds;
 	//! The number of LEDs in this model.
-	size_t led_count;
+	uint32_t led_count;
 
 	//! The match parameters to tweak how the tracker works.
 	struct t_constellation_tracker_led_model_match_parameters match_parameters;
@@ -320,7 +320,7 @@ struct t_constellation_tracker_led_model
 	 * @return Whether the LED is visible from the given position.
 	 */
 	bool (*compute_led_visibility)(struct t_constellation_tracker_led_model *led_model,
-	                               size_t led,
+	                               uint32_t led,
 	                               struct xrt_vec3 T_obj_cam);
 };
 
@@ -333,7 +333,7 @@ struct t_constellation_tracker_led_model
  */
 XRT_NONNULL_ALL static inline bool
 t_constellation_tracker_led_model_compute_led_visibility(struct t_constellation_tracker_led_model *led_model,
-                                                         size_t led,
+                                                         uint32_t led,
                                                          struct xrt_vec3 T_obj_cam)
 {
 	return led_model->compute_led_visibility(led_model, led, T_obj_cam);
@@ -363,11 +363,12 @@ struct t_constellation_tracker_sample
 	 */
 	bool has_world_pose;
 	//! The pose of the device at the time of the blobservation.
+
 	struct xrt_pose world_pose;
 	//! The mosaic index of the camera that made the blobservation in question.
-	size_t mosaic_index;
+	uint32_t mosaic_index;
 	//! The index of the camera in the mosaic that made the blobservation in question.
-	size_t camera_index;
+	uint32_t camera_index;
 	//! Average brightness of the detected blobs, from 0 (black) to 1 (pure white).
 	float average_brightness;
 	//! Metrics about the sample, such as reprojection error and matched LED count.

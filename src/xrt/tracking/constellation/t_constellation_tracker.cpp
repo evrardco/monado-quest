@@ -282,7 +282,7 @@ Camera::Camera(ConstellationTracker *tracker,
                std::weak_ptr<CameraMosaic> mosaic,
                const t_constellation_tracker_camera &camera_params,
                enum u_logging_level *log_level_ptr,
-               size_t index)
+               uint32_t index)
     : tracker(tracker), mosaic(mosaic), calibration(camera_params.calibration), index(index)
 {
 	struct t_camera_model_params calib_true;
@@ -1122,7 +1122,7 @@ Camera::pushPose(CameraSample &camera_sample,
 
 CameraMosaic::CameraMosaic(ConstellationTracker *tracker,
                            const t_constellation_tracker_camera_mosaic &mosaic_params,
-                           size_t index)
+                           uint32_t index)
     : index(index)
 {
 	this->tracking_origin = mosaic_params.tracking_origin;
@@ -1188,7 +1188,7 @@ Device::Device(ConstellationTracker *tracker,
 	       sizeof(t_constellation_tracker_led) * this->params.led_model.led_count);
 
 	// flip all LEDs from OpenXR -> OpenCV coordinate space, since the tracker works in OpenCV space
-	for (size_t i = 0; i < this->params.led_model.led_count; i++) {
+	for (uint32_t i = 0; i < this->params.led_model.led_count; i++) {
 		t_constellation_tracker_led &dst = this->params.led_model.leds[i];
 		const t_constellation_tracker_led &src = params->led_model.leds[i];
 
@@ -1244,7 +1244,7 @@ ConstellationTracker::ConstellationTracker(t_constellation_tracker_params *param
 	this->mosaics.reserve(params->num_mosaics);
 
 	// Fill in our internal data structures based on the provided params
-	for (size_t mosaic_idx = 0; mosaic_idx < params->num_mosaics; mosaic_idx++) {
+	for (uint32_t mosaic_idx = 0; mosaic_idx < params->num_mosaics; mosaic_idx++) {
 		const t_constellation_tracker_camera_mosaic &mosaic_params = params->mosaics[mosaic_idx];
 
 		std::shared_ptr<CameraMosaic> mosaic = std::make_shared<CameraMosaic>(this, mosaic_params, mosaic_idx);
@@ -1252,7 +1252,7 @@ ConstellationTracker::ConstellationTracker(t_constellation_tracker_params *param
 		// Assert pointer stability!
 		assert(mosaic->cameras.capacity() >= mosaic_params.num_cameras);
 
-		for (size_t cam_idx = 0; cam_idx < mosaic_params.num_cameras; cam_idx++) {
+		for (uint32_t cam_idx = 0; cam_idx < mosaic_params.num_cameras; cam_idx++) {
 			const t_constellation_tracker_camera &camera_params = mosaic_params.cameras[cam_idx];
 
 			// This can't be in the constructor since the `shared_ptr` of the `mosaic` isn't formed
@@ -1355,7 +1355,7 @@ ConstellationTracker::checkSensorCalibration()
 		return true;
 	}
 
-	size_t num_cameras = 0;
+	uint32_t num_cameras = 0;
 	for (const auto &mosaic : this->mosaics) {
 		num_cameras += mosaic->cameras.size();
 	}

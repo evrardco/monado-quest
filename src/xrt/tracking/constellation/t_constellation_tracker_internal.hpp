@@ -227,7 +227,7 @@ public: // Fields
 	CameraScribbleSettings scribble_settings{};
 
 	//! The index in the mosaic
-	size_t index;
+	uint32_t index;
 
 	//! Does "slow" processing for this camera when fast recovery paths fail.
 	os_thread_helper slow_processing_thread{};
@@ -276,7 +276,7 @@ public: // Methods (t_constellation_tracker.cpp)
 	       std::weak_ptr<CameraMosaic> mosaic,
 	       const t_constellation_tracker_camera &camera_params,
 	       enum u_logging_level *log_level_ptr,
-	       size_t index);
+	       uint32_t index);
 
 	~Camera();
 
@@ -336,14 +336,14 @@ struct CameraMosaic
 public: // Fields
 	std::vector<std::unique_ptr<Camera>> cameras;
 	//! The index of this mosaic in the tracker.
-	size_t index;
+	uint32_t index;
 
 	t_constellation_tracker_tracking_source *tracking_origin;
 
 public: // Methods
 	CameraMosaic(ConstellationTracker *tracker,
 	             const t_constellation_tracker_camera_mosaic &mosaic_params,
-	             size_t index);
+	             uint32_t index);
 
 	~CameraMosaic() = default;
 
