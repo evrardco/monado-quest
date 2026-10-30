@@ -113,30 +113,6 @@ constructObservation(SensorFusion *fusion,
 	return true;
 }
 
-void
-writeSampleToKeyframe(SensorFusion *fusion,
-                      Keyframe &keyframe,
-                      const DeviceObservation &observation,
-                      uint32_t camera_index)
-{
-	/*
-	 * A keyframe has room for every camera of a mosaic to observe the device exactly once, which is all
-	 * that can legitimately land in one. Should never happen, but overrunning would scribble straight over
-	 * the rest of the fusion state.
-	 */
-	assert(keyframe.num_observations < keyframe.observations.size());
-	if (keyframe.num_observations >= keyframe.observations.size()) {
-		SF_WARN(fusion, "Keyframe at %" PRIi64 " is full at %zu observations, dropping camera %u's.",
-		        keyframe.timestamp_ns, keyframe.observations.size(), camera_index);
-
-		assert(!"Unreachable.");
-
-		return;
-	}
-
-	keyframe.observations[keyframe.num_observations++] = observation;
-}
-
 //! How many times a collect will retry after being lapped by the IMU thread before it gives up.
 constexpr uint32_t kImuCollectAttempts = 4;
 
@@ -1130,77 +1106,6 @@ integrateToTimestampHistory(const double world_gravity_mag,
 	inout_solve.time_ns = pose_ns;
 }
 
-/*!
- * Dead reckons @p inout_solve forward through every IMU sample that has arrived since it, pushing a pose for each into
- * the device's relation history.
- *
- * The history only takes poses newer than the newest it already holds, so wherever it already covers the range, the
- * poses integrated there are dropped, and only the state carried out the end of the range is kept.
- *
- * @return false, leaving @p inout_solve untouched, when the samples could not be collected.
- */
-static bool
-reckonToLatestImu(SensorFusion *fusion, DeviceSolveState &inout_solve)
-{
-	auto &device = fusion->device;
-
-	const timepoint_ns latest_imu_ts_ns = device.latest_imu_ts_ns.load();
-
-	// Nothing has arrived since, so there is nothing to integrate.
-	if (latest_imu_ts_ns <= inout_solve.time_ns) {
-		return true;
-	}
-
-	std::array<xrt_imu_sample, kImuBufferSize> samples_buf;
-	uint32_t num_samples = 0;
-	xrt_imu_sample out_first_after;
-	const auto result = collectImuSamplesForRange( //
-	    device,                                    //
-	    inout_solve.time_ns,                       //
-	    latest_imu_ts_ns,                          //
-	    samples_buf,                               //
-	    num_samples,                               //
-	    out_first_after);                          //
-
-	// The range ends at the newest sample, so there is usually no sample after it to find.
-	if (result != ImuCollectResult::Ok && result != ImuCollectResult::NoSampleAfterEnd) {
-		return false;
-	}
-
-	if (num_samples == 0) {
-		return true;
-	}
-
-	const timepoint_ns start_ns = inout_solve.time_ns;
-	integrateToTimestampHistory(fusion->snapshot.world_gravity_mag,                               //
-	                            inout_solve,                                                      //
-	                            std::span<const xrt_imu_sample>(samples_buf.data(), num_samples), //
-	                            device.relation_history);                                         //
-
-	SF_TRACE(fusion, "Filled relation history for device %d from %" PRIi64 " to %" PRIi64, device.id, start_ns,
-	         samples_buf[num_samples - 1].timestamp_ns);
-
-	return true;
-}
-
-static void
-updateDeviceRelationHistoryLocked(SensorFusion *fusion)
-{
-	auto &device = fusion->device;
-
-	auto &solve = device.latest_imu_reckon;
-
-	// We have no fusion solve yet to start with
-	if (!solve.has_value()) {
-		return;
-	}
-
-	// Update the imu calibration
-	solve->imu_calibration = device.latest_solve->imu_calibration;
-
-	(void)reckonToLatestImu(fusion, *solve);
-}
-
 extern "C" void *
 thread_runner(void *ptr)
 {
@@ -1214,23 +1119,7 @@ thread_runner(void *ptr)
 	while (os_thread_helper_is_running_locked(&fusion->thread)) {
 		timepoint_ns now_ns = os_monotonic_get_ns();
 
-		auto &queue = fusion->sample_queue;
-		auto is_ready = [](timepoint_ns now_ns, timepoint_ns latest_imu_ts_ns) {
-			// Only samples the IMU has passed can have the interval ending at them integrated.
-			return [now_ns, latest_imu_ts_ns](const auto &sample) {
-				// If the imu is 100ms old, just accept anything so that the fusion thread doesn't spill
-				// over.
-				if (now_ns - latest_imu_ts_ns > U_TIME_1MS_IN_NS * 100L) {
-					return true;
-				}
-
-				return sample.timestamp_ns < latest_imu_ts_ns;
-			};
-		};
-
-		timepoint_ns latest_imu_ts_ns = fusion->device.latest_imu_ts_ns.load();
-
-		if (std::none_of(queue.begin(), queue.end(), is_ready(now_ns, latest_imu_ts_ns))) {
+		if (!fusion->pullReadyCameraSamplesLocked(now_ns, pending)) {
 			os_thread_helper_wait_locked(&fusion->thread);
 
 			// Shutdown wakes us the same way work does, so just exit out if we're no longer supposed to run
@@ -1239,19 +1128,9 @@ thread_runner(void *ptr)
 			}
 		}
 
-		auto ready_end = std::stable_partition(queue.begin(), queue.end(), is_ready(now_ns, latest_imu_ts_ns));
-
-		pending.clear();
-		pending.insert(pending.end(), queue.begin(), ready_end);
-		queue.erase(queue.begin(), ready_end);
-
 		// Unlock for costly operations (sorting and fusion). We touch nothing that needs the thread lock.
 		os_thread_helper_unlock(&fusion->thread);
 		{
-			// Fold in timestamp order, so a late arrival doesn't miss its keyframe.
-			std::stable_sort(pending.begin(), pending.end(),
-			                 [](const auto &a, const auto &b) { return a.timestamp_ns < b.timestamp_ns; });
-
 			// Camera samples are the only thing a solve is worth running for.
 			const bool have_new_input = !pending.empty();
 
@@ -1262,19 +1141,14 @@ thread_runner(void *ptr)
 			std::lock_guard<os::Mutex> lock{fusion->lock};
 
 			// Update the latest device relation history
-			updateDeviceRelationHistoryLocked(fusion);
+			fusion->updateDeviceRelationHistoryLocked();
 
 			for (const auto &sample : pending) {
 				fusion->processCameraSampleLocked(sample);
 			}
+			pending.clear();
 
-			if (have_new_input) {
-				fusion->dirty = true;
-			}
-
-			if (fusion->tickLocked(have_new_input)) {
-				fusion->runFusionLocked();
-			}
+			fusion->tickLocked(have_new_input);
 		}
 		os_thread_helper_lock(&fusion->thread);
 	}
@@ -2517,142 +2391,40 @@ SensorFusion::rebuildForEvictionLocked()
 	// We aren't doing a solve here, just making sure our marginalization is up to date
 }
 
-void
-SensorFusion::runFusionLocked()
+bool
+SensorFusion::pullReadyCameraSamplesLocked(timepoint_ns now_ns, std::vector<constellation::CameraSample> &pending)
 {
-	ceres::Problem &problem = this->problem->problem;
+	auto &queue = this->sample_queue;
 
-	/*
-	 * Fixed for the life of this solve since this thread is the only ones to add residuals and we aren't doing that
-	 * here.
-	 */
-	const int num_residuals = problem.NumResiduals();
+	auto is_ready = [](timepoint_ns now_ns, timepoint_ns latest_imu_ts_ns) {
+		// Only samples the IMU has passed can have the interval ending at them integrated.
+		return [now_ns, latest_imu_ts_ns](const auto &sample) {
+			// If the imu is 100ms old, just accept anything so that the fusion thread doesn't spill
+			// over.
+			if (now_ns - latest_imu_ts_ns > U_TIME_1MS_IN_NS * 100L) {
+				return true;
+			}
 
-	ceres::Solver::Options options{};
-	options.max_num_iterations = 3; // iterations are expensive, our seeds are good
-	/*
-	 * The problem is block sparse: a keyframe only touches it's observations, IMU preintegration,
-	 * keyframe intrinsics/extrinsics, and the world gravity.
-	 */
-	options.linear_solver_type = ceres::LinearSolverType::SPARSE_NORMAL_CHOLESKY;
-	// We require Eigen's sparse backend, see root CMakeLists.txt which enforces we have this backend.
-	options.sparse_linear_algebra_library_type = ceres::SparseLinearAlgebraLibraryType::EIGEN_SPARSE;
-	options.minimizer_progress_to_stdout = false;
-	options.logging_type = ceres::LoggingType::PER_MINIMIZER_ITERATION;
-
-	/*!
-	 * Leave two threads for other work/games, but take as much as we can for latency. Every solver shares a context
-	 * so solvers will fight over the same thread pool for their work, being ((hardware_concurrency - 2) - 1) extra
-	 * threads being used in the ceres::Context (this thread also works hence the -1).
-	 *
-	 * @todo This math fails when multiple fusion instances are running, fix that.
-	 */
-	options.num_threads = MAX(1, static_cast<int>(std::thread::hardware_concurrency()) - 2);
-
-	// @todo Tune the solve exit tolerances to actual numbers.
-
-	// Ceres does not take ownership, and the callback only has to outlive the `Solve` below.
-	ResidualRmsTargetCallback rms_target{num_residuals, kTargetResidualRmsSigma};
-
-	if constexpr (kExitOnRmsFloor) {
-		options.callbacks.push_back(&rms_target);
-		/*
-		 * The callback reads nothing but the cost Ceres has already computed, so the solve is spared pushing
-		 * parameter state back out to the blocks every iteration.
-		 */
-		options.update_state_every_iteration = false;
-	}
-
-	ceres::Solver::Summary summary;
-	ceres::Solve(options, &problem, &summary);
-
-	// Check for invalid solve.
-	if (!summary.IsSolutionUsable()) {
-		SF_ERROR(this, "Fusion solve is not usable. Reason: %s", summary.message.c_str());
-		this->resetLocked();
-		return;
-	}
-
-	this->problem->fillSnapshotLocked(*this);
-	SolveSnapshot &snapshot = this->snapshot;
-
-#ifdef XRT_FEATURE_RERUN
-	if (this->rerun_context) {
-		snapshot.num_residuals = num_residuals;
-		snapshot.num_parameter_blocks = problem.NumParameterBlocks();
-		snapshot.num_iterations = static_cast<uint32_t>(summary.iterations.size());
-		snapshot.initial_rms_sigma = residualRmsSigma(summary.initial_cost, num_residuals);
-		snapshot.final_rms_sigma = residualRmsSigma(summary.final_cost, num_residuals);
-		snapshot.solve_time_s = summary.total_time_in_seconds;
-		snapshot.termination = ceres::TerminationTypeToString(summary.termination_type);
-
-		this->rerun_context->logSolve(snapshot);
-
-		/*
-		 * Numbered after the fact, so the first solve is 0 and the logger's sequence timeline lines up with
-		 * how many solves have actually been logged.
-		 */
-		snapshot.solve_index += 1;
-	}
-#endif
-
-	bool device_updated = false;
-	for (uint32_t i = 0; i < snapshot.num_keyframes; i++) {
-		const auto &keyframe = snapshot.keyframes[i];
-
-		// Device has already been updated
-		if (device_updated) {
-			continue;
-		}
-
-		// If the device isn't in this keyframe, skip it
-		if (!(snapshot.device.keyframe_mask & (1 << i))) {
-			continue;
-		}
-
-		this->device.latest_solve = DeviceSolveState{
-		    .time_ns = keyframe.timestamp_ns,
-		    .Tcv_world_device = keyframe.device.Tcv_world_device,
-		    .world_velocity = keyframe.device.velocity,
-		    .imu_calibration =
-		        {
-		            .accel_bias = keyframe.device.accel_bias,
-		            .gyro_bias = keyframe.device.gyro_bias,
-		            .accel_scale = keyframe.device.accel_scale,
-		            .Qcv_model_imu = snapshot.device.Qcv_model_imu,
-		        },
+			return sample.timestamp_ns < latest_imu_ts_ns;
 		};
+	};
 
-		/*
-		 * Restart dead reckoning from this solve, carried forward to the newest IMU sample. That integrates the
-		 * stretch since the keyframe a second time, but everything reckoned from here on starts from the better
-		 * estimate.
-		 */
-		DeviceSolveState reckon = *this->device.latest_solve;
-		if (reckonToLatestImu(this, reckon)) {
-			this->device.latest_imu_reckon = reckon;
-		} else if (!this->device.latest_imu_reckon.has_value()) {
-			// Nothing older to dead reckon from, so start from the solve itself and let the next pass
-			// retry.
-			this->device.latest_imu_reckon = this->device.latest_solve;
-		} else {
-			SF_WARN(this,
-			        "Could not dead reckon device %d from its solve at %" PRIi64 ", keeping the old one",
-			        this->device.id, keyframe.timestamp_ns);
-		}
+	timepoint_ns latest_imu_ts_ns = this->device.latest_imu_ts_ns.load();
 
-		device_updated = true;
-
-		SF_DEBUG(this, "Got new solved pose for device %d at %" PRIi64, this->device.id, keyframe.timestamp_ns);
+	if (std::none_of(queue.begin(), queue.end(), is_ready(now_ns, latest_imu_ts_ns))) {
+		return false;
 	}
 
-	SF_DEBUG(this, "Solved system in %zu iterations, %.3f -> %.3f sigma RMS over %d residuals (%s). Report: %s",
-	         summary.iterations.size(),                                //
-	         residualRmsSigma(summary.initial_cost, num_residuals),    //
-	         residualRmsSigma(summary.final_cost, num_residuals),      //
-	         num_residuals,                                            //
-	         ceres::TerminationTypeToString(summary.termination_type), //
-	         summary.FullReport().c_str());                            //
+	auto ready_end = std::stable_partition(queue.begin(), queue.end(), is_ready(now_ns, latest_imu_ts_ns));
+
+	pending.insert(pending.end(), queue.begin(), ready_end);
+	queue.erase(queue.begin(), ready_end);
+
+	// Fold in timestamp order, so a late arrival doesn't miss its keyframe.
+	std::stable_sort(pending.begin(), pending.end(),
+	                 [](const auto &a, const auto &b) { return a.timestamp_ns < b.timestamp_ns; });
+
+	return true;
 }
 
 /*
@@ -2787,6 +2559,28 @@ SensorFusion::pushCameraSample(constellation::ConstellationTracker *tracker, con
 }
 
 void
+SensorFusion::writeSampleToKeyframe(Keyframe &keyframe, const DeviceObservation &observation, uint32_t camera_index)
+{
+	/*
+	 * A keyframe has room for every camera of a mosaic to observe the device exactly once, which is all
+	 * that can legitimately land in one. Should never happen, but overrunning would scribble straight over
+	 * the rest of the fusion state.
+	 */
+	assert(keyframe.num_observations < keyframe.observations.size());
+	if (keyframe.num_observations >= keyframe.observations.size()) {
+		SF_WARN(this, "Keyframe at %" PRIi64 " is full at %zu observations, dropping camera %u's.",
+		        keyframe.timestamp_ns, keyframe.observations.size(), camera_index);
+
+		assert(!"Unreachable.");
+
+		return;
+	}
+
+	keyframe.observations[keyframe.num_observations++] = observation;
+	this->dirty = true;
+}
+
+void
 SensorFusion::processCameraSampleLocked(const constellation::CameraSample &sample)
 {
 	Keyframe *keyframe = nullptr;
@@ -2892,7 +2686,7 @@ SensorFusion::processCameraSampleLocked(const constellation::CameraSample &sampl
 	}
 
 	// Write the sample of the found device
-	writeSampleToKeyframe(this, *keyframe, observation, sample.camera_index);
+	this->writeSampleToKeyframe(*keyframe, observation, sample.camera_index);
 }
 
 void
@@ -3102,10 +2896,72 @@ SensorFusion::preintegrateDeviceLocked(bool &work_remaining)
 }
 
 bool
+SensorFusion::reckonToLatestImu(DeviceSolveState &inout_solve)
+{
+	auto &device = this->device;
+
+	const timepoint_ns latest_imu_ts_ns = device.latest_imu_ts_ns.load();
+
+	// Nothing has arrived since, so there is nothing to integrate.
+	if (latest_imu_ts_ns <= inout_solve.time_ns) {
+		return true;
+	}
+
+	std::array<xrt_imu_sample, kImuBufferSize> samples_buf;
+	uint32_t num_samples = 0;
+	xrt_imu_sample out_first_after;
+	const auto result = collectImuSamplesForRange( //
+	    device,                                    //
+	    inout_solve.time_ns,                       //
+	    latest_imu_ts_ns,                          //
+	    samples_buf,                               //
+	    num_samples,                               //
+	    out_first_after);                          //
+
+	// The range ends at the newest sample, so there is usually no sample after it to find.
+	if (result != ImuCollectResult::Ok && result != ImuCollectResult::NoSampleAfterEnd) {
+		return false;
+	}
+
+	if (num_samples == 0) {
+		return true;
+	}
+
+	const timepoint_ns start_ns = inout_solve.time_ns;
+	integrateToTimestampHistory(this->snapshot.world_gravity_mag,                                 //
+	                            inout_solve,                                                      //
+	                            std::span<const xrt_imu_sample>(samples_buf.data(), num_samples), //
+	                            device.relation_history);                                         //
+
+	SF_TRACE(this, "Filled relation history for device %d from %" PRIi64 " to %" PRIi64, device.id, start_ns,
+	         samples_buf[num_samples - 1].timestamp_ns);
+
+	return true;
+}
+
+void
+SensorFusion::updateDeviceRelationHistoryLocked()
+{
+	auto &device = this->device;
+
+	auto &solve = device.latest_imu_reckon;
+
+	// We have no fusion solve yet to start with
+	if (!solve.has_value()) {
+		return;
+	}
+
+	// Update the imu calibration
+	solve->imu_calibration = device.latest_solve->imu_calibration;
+
+	(void)this->reckonToLatestImu(*solve);
+}
+
+void
 SensorFusion::tickLocked(bool have_new_input)
 {
 	if (!this->dirty) {
-		return false;
+		return;
 	}
 
 	/*
@@ -3128,7 +2984,144 @@ SensorFusion::tickLocked(bool have_new_input)
 
 	this->dirty = work_remaining;
 
-	return run_fusion;
+	// We're not running fusion this iteration
+	if (!run_fusion) {
+		return;
+	}
+
+	ceres::Problem &problem = this->problem->problem;
+
+	/*
+	 * Fixed for the life of this solve since this thread is the only ones to add residuals and we aren't doing that
+	 * here.
+	 */
+	const int num_residuals = problem.NumResiduals();
+
+	ceres::Solver::Options options{};
+	options.max_num_iterations = 3; // iterations are expensive, our seeds are good
+	/*
+	 * The problem is block sparse: a keyframe only touches it's observations, IMU preintegration,
+	 * keyframe intrinsics/extrinsics, and the world gravity.
+	 */
+	options.linear_solver_type = ceres::LinearSolverType::SPARSE_NORMAL_CHOLESKY;
+	// We require Eigen's sparse backend, see root CMakeLists.txt which enforces we have this backend.
+	options.sparse_linear_algebra_library_type = ceres::SparseLinearAlgebraLibraryType::EIGEN_SPARSE;
+	options.minimizer_progress_to_stdout = false;
+	options.logging_type = ceres::LoggingType::PER_MINIMIZER_ITERATION;
+
+	/*!
+	 * Leave two threads for other work/games, but take as much as we can for latency. Every solver shares a context
+	 * so solvers will fight over the same thread pool for their work, being ((hardware_concurrency - 2) - 1) extra
+	 * threads being used in the ceres::Context (this thread also works hence the -1).
+	 *
+	 * @todo This math fails when multiple fusion instances are running, fix that.
+	 */
+	options.num_threads = MAX(1, static_cast<int>(std::thread::hardware_concurrency()) - 2);
+
+	// @todo Tune the solve exit tolerances to actual numbers.
+
+	// Ceres does not take ownership, and the callback only has to outlive the `Solve` below.
+	ResidualRmsTargetCallback rms_target{num_residuals, kTargetResidualRmsSigma};
+
+	if constexpr (kExitOnRmsFloor) {
+		options.callbacks.push_back(&rms_target);
+		/*
+		 * The callback reads nothing but the cost Ceres has already computed, so the solve is spared pushing
+		 * parameter state back out to the blocks every iteration.
+		 */
+		options.update_state_every_iteration = false;
+	}
+
+	ceres::Solver::Summary summary;
+	ceres::Solve(options, &problem, &summary);
+
+	// Check for invalid solve.
+	if (!summary.IsSolutionUsable()) {
+		SF_ERROR(this, "Fusion solve is not usable. Reason: %s", summary.message.c_str());
+		this->resetLocked();
+		return;
+	}
+
+	this->problem->fillSnapshotLocked(*this);
+	SolveSnapshot &snapshot = this->snapshot;
+
+#ifdef XRT_FEATURE_RERUN
+	if (this->rerun_context) {
+		snapshot.num_residuals = num_residuals;
+		snapshot.num_parameter_blocks = problem.NumParameterBlocks();
+		snapshot.num_iterations = static_cast<uint32_t>(summary.iterations.size());
+		snapshot.initial_rms_sigma = residualRmsSigma(summary.initial_cost, num_residuals);
+		snapshot.final_rms_sigma = residualRmsSigma(summary.final_cost, num_residuals);
+		snapshot.solve_time_s = summary.total_time_in_seconds;
+		snapshot.termination = ceres::TerminationTypeToString(summary.termination_type);
+
+		this->rerun_context->logSolve(snapshot);
+
+		/*
+		 * Numbered after the fact, so the first solve is 0 and the logger's sequence timeline lines up with
+		 * how many solves have actually been logged.
+		 */
+		snapshot.solve_index += 1;
+	}
+#endif
+
+	bool device_updated = false;
+	for (uint32_t i = 0; i < snapshot.num_keyframes; i++) {
+		const auto &keyframe = snapshot.keyframes[i];
+
+		// Device has already been updated
+		if (device_updated) {
+			continue;
+		}
+
+		// If the device isn't in this keyframe, skip it
+		if (!(snapshot.device.keyframe_mask & (1 << i))) {
+			continue;
+		}
+
+		this->device.latest_solve = DeviceSolveState{
+		    .time_ns = keyframe.timestamp_ns,
+		    .Tcv_world_device = keyframe.device.Tcv_world_device,
+		    .world_velocity = keyframe.device.velocity,
+		    .imu_calibration =
+		        {
+		            .accel_bias = keyframe.device.accel_bias,
+		            .gyro_bias = keyframe.device.gyro_bias,
+		            .accel_scale = keyframe.device.accel_scale,
+		            .Qcv_model_imu = snapshot.device.Qcv_model_imu,
+		        },
+		};
+
+		/*
+		 * Restart dead reckoning from this solve, carried forward to the newest IMU sample. That integrates the
+		 * stretch since the keyframe a second time, but everything reckoned from here on starts from the better
+		 * estimate.
+		 */
+		DeviceSolveState reckon = *this->device.latest_solve;
+		if (this->reckonToLatestImu(reckon)) {
+			this->device.latest_imu_reckon = reckon;
+		} else if (!this->device.latest_imu_reckon.has_value()) {
+			// Nothing older to dead reckon from, so start from the solve itself and let the next pass
+			// retry.
+			this->device.latest_imu_reckon = this->device.latest_solve;
+		} else {
+			SF_WARN(this,
+			        "Could not dead reckon device %d from its solve at %" PRIi64 ", keeping the old one",
+			        this->device.id, keyframe.timestamp_ns);
+		}
+
+		device_updated = true;
+
+		SF_DEBUG(this, "Got new solved pose for device %d at %" PRIi64, this->device.id, keyframe.timestamp_ns);
+	}
+
+	SF_DEBUG(this, "Solved system in %zu iterations, %.3f -> %.3f sigma RMS over %d residuals (%s). Report: %s",
+	         summary.iterations.size(),                                //
+	         residualRmsSigma(summary.initial_cost, num_residuals),    //
+	         residualRmsSigma(summary.final_cost, num_residuals),      //
+	         num_residuals,                                            //
+	         ceres::TerminationTypeToString(summary.termination_type), //
+	         summary.FullReport().c_str());                            //
 }
 
 }; // namespace xrt::tracking::constellation::optimizer::sensor_fusion

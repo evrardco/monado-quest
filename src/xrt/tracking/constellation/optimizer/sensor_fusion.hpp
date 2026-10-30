@@ -613,6 +613,19 @@ public: // Methods
 	getTrackedPose(timepoint_ns requested_time_ns, xrt_space_relation &out_relation);
 
 	/*!
+	 * Appends any camera samples into @p pending, before sorting pending by timestamp order.
+	 *
+	 * @remarks Call with @ref SensorFusion::thread lock held.
+	 *
+	 * @return Whether any camera samples have been passed by the IMU, and so are ready for integration.
+	 */
+	bool
+	pullReadyCameraSamplesLocked(timepoint_ns now_ns, std::vector<constellation::CameraSample> &pending);
+
+	void
+	writeSampleToKeyframe(Keyframe &keyframe, const DeviceObservation &observation, uint32_t camera_index);
+
+	/*!
 	 * Folds one queued camera sample into the window, or drops if it's no longer able to be merged in.
 	 *
 	 * This is the far side of @ref sample_queue, and the only thing that grows the window.
@@ -621,24 +634,32 @@ public: // Methods
 	processCameraSampleLocked(const constellation::CameraSample &sample);
 
 	/*!
-	 * Runs preintegration, and when @p have_new_input says the window has gained something to solve over, builds
-	 * the problem.
+	 * Dead reckons @p inout_solve forward through every IMU sample that has arrived since it, pushing a pose for
+	 * each into the device's relation history.
 	 *
-	 * @param have_new_input Whether this pass drained any camera samples, rather than being woken by an IMU
-	 *                       sample arriving to unpark a preintegration. Preintegration runs either way; only new
-	 *                       input is worth a solve, which is what keeps the solve rate tied to the cameras
-	 *                       rather than to the IMU.
+	 * The history only takes poses newer than the newest it already holds, so wherever it already covers the range,
+	 * the poses integrated there are dropped, and only the state carried out the end of the range is kept.
 	 *
-	 * @returns `true` if the problem needs to be run, meaning the built problem holds at least one residual.
+	 * @return false, leaving @p inout_solve untouched, when the samples could not be collected.
 	 */
 	bool
-	tickLocked(bool have_new_input);
+	reckonToLatestImu(DeviceSolveState &inout_solve);
 
 	/*!
-	 * Solves the problem `tickLocked` built and publishes what came out of it.
+	 * Uses the latest IMU reckoned solve and reckons it forward to the latest IMU sample
 	 */
 	void
-	runFusionLocked();
+	updateDeviceRelationHistoryLocked();
+
+	/*!
+	 * Runs preintegration, and when @p have_new_input says the window has gained something to solve over,
+	 * builds the problem, then solves it if need-be.
+	 *
+	 * @param have_new_input Whether this pass drained any camera samples, rather than being woken by an IMU
+	 *                       sample arriving to unpark a preintegration.
+	 */
+	void
+	tickLocked(bool have_new_input);
 };
 
 }; // namespace xrt::tracking::constellation::optimizer::sensor_fusion
