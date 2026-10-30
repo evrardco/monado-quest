@@ -64,7 +64,7 @@ get_config_path()
 #ifdef XRT_OS_WINDOWS
 	char *buffer = nullptr;
 	errno_t ret = _dupenv_s(&buffer, nullptr, "LOCALAPPDATA");
-	if (ret != 0) {
+	if (ret != 0 || buffer == nullptr) {
 		return {};
 	}
 
