@@ -590,7 +590,7 @@ vk_str_queue_global_priority_or_null(VkQueueGlobalPriorityEXT priority)
 }
 
 XRT_CHECK_RESULT const char *
-vk_format_feature_flag_string(VkFormatFeatureFlagBits bits, bool null_on_unknown)
+vk_str_format_feature_flag_bits_or_null(VkFormatFeatureFlagBits bits)
 {
 	switch (bits) {
 		ENUM_TO_STR(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
@@ -598,19 +598,12 @@ vk_format_feature_flag_string(VkFormatFeatureFlagBits bits, bool null_on_unknown
 		ENUM_TO_STR(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 		ENUM_TO_STR(VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
 		ENUM_TO_STR(VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
-	default:
-		if (bits == 0) {
-			return "FORMAT FEATURE: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "FORMAT FEATURE: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "FORMAT FEATURE: UNKNOWN BIT";
-		}
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_swapchain_create_flag_string(VkSwapchainCreateFlagsKHR bits, bool null_on_unknown)
+vk_str_swapchain_create_flag_bits_or_null(VkSwapchainCreateFlagBitsKHR bits)
 {
 	switch (bits) {
 #if (defined(VK_VERSION_1_1) || defined(VK_KHR_device_group)) && defined(VK_KHR_swapchain)
@@ -640,19 +633,12 @@ vk_swapchain_create_flag_string(VkSwapchainCreateFlagsKHR bits, bool null_on_unk
 #if defined(VK_EXT_swapchain_maintenance1) && !defined(VK_KHR_swapchain_maintenance1)
 		ENUM_TO_STR(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT);
 #endif
-	default:
-		if (bits == 0) {
-			return "SWAPCHAIN CREATE: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "SWAPCHAIN CREATE: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "SWAPCHAIN CREATE: UNKNOWN BIT";
-		}
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_image_usage_flag_string(VkImageUsageFlagBits bits, bool null_on_unknown)
+vk_str_image_usage_flag_bits_or_null(VkImageUsageFlagBits bits)
 {
 	switch (bits) {
 		ENUM_TO_STR(VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
@@ -692,38 +678,24 @@ vk_image_usage_flag_string(VkImageUsageFlagBits bits, bool null_on_unknown)
 #if defined(VK_NV_shading_rate_image) && !defined(VK_KHR_fragment_shading_rate)
 		ENUM_TO_STR(VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV);
 #endif
-	default:
-		if (bits == 0) {
-			return "IMAGE USAGE: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "IMAGE USAGE: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "IMAGE USAGE: UNKNOWN BIT";
-		}
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_composite_alpha_flag_string(VkCompositeAlphaFlagBitsKHR bits, bool null_on_unknown)
+vk_str_composite_alpha_flag_bits_or_null(VkCompositeAlphaFlagBitsKHR bits)
 {
 	switch (bits) {
 		ENUM_TO_STR(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 		ENUM_TO_STR(VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR);
 		ENUM_TO_STR(VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR);
 		ENUM_TO_STR(VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR);
-	default:
-		if (bits == 0) {
-			return "COMPOSITE ALPHA: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "COMPOSITE ALPHA: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "COMPOSITE ALPHA: UNKNOWN BIT";
-		}
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_surface_transform_flag_string(VkSurfaceTransformFlagBitsKHR bits, bool null_on_unknown)
+vk_str_surface_transform_flag_bits_or_null(VkSurfaceTransformFlagBitsKHR bits)
 {
 	switch (bits) {
 		ENUM_TO_STR(VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR);
@@ -735,34 +707,20 @@ vk_surface_transform_flag_string(VkSurfaceTransformFlagBitsKHR bits, bool null_o
 		ENUM_TO_STR(VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR);
 		ENUM_TO_STR(VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR);
 		ENUM_TO_STR(VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR);
-	default:
-		if (bits == 0) {
-			return "SURFACE TRANSFORM: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "SURFACE TRANSFORM: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "SURFACE TRANSFORM: UNKNOWN BIT";
-		}
+	default: return NULL;
 	}
 }
 
 #ifdef VK_KHR_display
 XRT_CHECK_RESULT const char *
-vk_display_plane_alpha_flag_string(VkDisplayPlaneAlphaFlagBitsKHR bits, bool null_on_unknown)
+vk_str_display_plane_alpha_flag_bits_or_null(VkDisplayPlaneAlphaFlagBitsKHR bits)
 {
 	switch (bits) {
 		ENUM_TO_STR(VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR);
 		ENUM_TO_STR(VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR);
 		ENUM_TO_STR(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR);
 		ENUM_TO_STR(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR);
-	default:
-		if (bits == 0) {
-			return "DISPLAY PLANE ALPHA: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "DISPLAY PLANE ALPHA: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "DISPLAY PLANE ALPHA: UNKNOWN BIT";
-		}
+	default: return NULL;
 	}
 }
 #endif

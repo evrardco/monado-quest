@@ -95,50 +95,67 @@ VK_STR_NO_NULL(vk_str_queue_global_priority, VkQueueGlobalPriorityEXT, "UNKNOWN 
  */
 
 /*!
- * Returns the format feature flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
+ * @name Flag bits string functions
+ *
+ * Returns a string of the flag bit, or NULL if unknown or if zero or multiple
+ * bits are set. The versions without the `_or_null` suffix instead return
+ * '<TYPE>: NO BITS SET', '<TYPE>: MULTIPLE BITS SET' or '<TYPE>: UNKNOWN BIT'.
+ *
+ * @ingroup aux_vk
+ * @{
  */
-XRT_CHECK_RESULT const char *
-vk_format_feature_flag_string(VkFormatFeatureFlagBits bits, bool null_on_unknown);
 
-/*!
- * Returns the swapchain create flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
 XRT_CHECK_RESULT const char *
-vk_swapchain_create_flag_string(VkSwapchainCreateFlagsKHR bits, bool null_on_unknown);
+vk_str_format_feature_flag_bits_or_null(VkFormatFeatureFlagBits bits);
 
-/*!
- * Returns the image usage flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
 XRT_CHECK_RESULT const char *
-vk_image_usage_flag_string(VkImageUsageFlagBits bits, bool null_on_unknown);
+vk_str_swapchain_create_flag_bits_or_null(VkSwapchainCreateFlagBitsKHR bits);
 
-/*!
- * Returns the composite alpha flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
 XRT_CHECK_RESULT const char *
-vk_composite_alpha_flag_string(VkCompositeAlphaFlagBitsKHR bits, bool null_on_unknown);
+vk_str_image_usage_flag_bits_or_null(VkImageUsageFlagBits bits);
 
-/*!
- * Returns the surface transform flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
 XRT_CHECK_RESULT const char *
-vk_surface_transform_flag_string(VkSurfaceTransformFlagBitsKHR bits, bool null_on_unknown);
+vk_str_composite_alpha_flag_bits_or_null(VkCompositeAlphaFlagBitsKHR bits);
+
+XRT_CHECK_RESULT const char *
+vk_str_surface_transform_flag_bits_or_null(VkSurfaceTransformFlagBitsKHR bits);
 
 #ifdef VK_KHR_display
-/*!
- * Returns the display plane alpha flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
 XRT_CHECK_RESULT const char *
-vk_display_plane_alpha_flag_string(VkDisplayPlaneAlphaFlagBitsKHR bits, bool null_on_unknown);
+vk_str_display_plane_alpha_flag_bits_or_null(VkDisplayPlaneAlphaFlagBitsKHR bits);
+#endif // VK_KHR_display
+
+/*!
+ * @}
+ */
+
+#define VK_STR_FLAG_BITS_NO_NULL(NAME, TYPE, PREFIX)                                                                   \
+	static inline const char *NAME(TYPE bits)                                                                      \
+	{                                                                                                              \
+		const char *str = NAME##_or_null(bits);                                                                \
+		uint32_t value = (uint32_t)bits;                                                                       \
+		if (str != NULL) {                                                                                     \
+			return str;                                                                                    \
+		} else if (value == 0) {                                                                               \
+			return PREFIX ": NO BITS SET";                                                                 \
+		} else if ((value & (value - 1)) != 0) {                                                               \
+			return PREFIX ": MULTIPLE BITS SET";                                                           \
+		} else {                                                                                               \
+			return PREFIX ": UNKNOWN BIT";                                                                 \
+		}                                                                                                      \
+	}
+
+VK_STR_FLAG_BITS_NO_NULL(vk_str_format_feature_flag_bits, VkFormatFeatureFlagBits, "FORMAT FEATURE")
+VK_STR_FLAG_BITS_NO_NULL(vk_str_swapchain_create_flag_bits, VkSwapchainCreateFlagBitsKHR, "SWAPCHAIN CREATE")
+VK_STR_FLAG_BITS_NO_NULL(vk_str_image_usage_flag_bits, VkImageUsageFlagBits, "IMAGE USAGE")
+VK_STR_FLAG_BITS_NO_NULL(vk_str_composite_alpha_flag_bits, VkCompositeAlphaFlagBitsKHR, "COMPOSITE ALPHA")
+VK_STR_FLAG_BITS_NO_NULL(vk_str_surface_transform_flag_bits, VkSurfaceTransformFlagBitsKHR, "SURFACE TRANSFORM")
+#ifdef VK_KHR_display
+VK_STR_FLAG_BITS_NO_NULL(vk_str_display_plane_alpha_flag_bits, VkDisplayPlaneAlphaFlagBitsKHR, "DISPLAY PLANE ALPHA")
 #endif // VK_KHR_display
 
 
+#undef VK_STR_FLAG_BITS_NO_NULL
 #undef VK_STR_NO_NULL
 
 #ifdef __cplusplus

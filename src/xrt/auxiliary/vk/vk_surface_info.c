@@ -27,7 +27,7 @@
 			if (!bit) {                                                                                    \
 				continue;                                                                              \
 			}                                                                                              \
-			const char *str = FUNC(bit, true);                                                             \
+			const char *str = FUNC##_or_null(bit);                                                         \
 			if (str != NULL) {                                                                             \
 				PNTT("%s", str);                                                                       \
 			} else {                                                                                       \
@@ -188,12 +188,12 @@ vk_print_surface_info(struct vk_bundle *vk, struct vk_surface_info *info, enum u
 	PNT("caps.maxImageExtent: %ux%u", info->caps.maxImageExtent.width, info->caps.maxImageExtent.height);
 	PNT("caps.maxImageArrayLayers: %u", info->caps.maxImageArrayLayers);
 	PNT("caps.supportedTransforms:");
-	PRINT_BITS(info->caps.supportedTransforms, vk_surface_transform_flag_string);
-	PNT("caps.currentTransform: %s", vk_surface_transform_flag_string(info->caps.currentTransform, false));
+	PRINT_BITS(info->caps.supportedTransforms, vk_str_surface_transform_flag_bits);
+	PNT("caps.currentTransform: %s", vk_str_surface_transform_flag_bits(info->caps.currentTransform));
 	PNT("caps.supportedCompositeAlpha:");
-	PRINT_BITS(info->caps.supportedCompositeAlpha, vk_composite_alpha_flag_string);
+	PRINT_BITS(info->caps.supportedCompositeAlpha, vk_str_composite_alpha_flag_bits);
 	PNT("caps.supportedUsageFlags:");
-	PRINT_BITS(info->caps.supportedUsageFlags, vk_image_usage_flag_string);
+	PRINT_BITS(info->caps.supportedUsageFlags, vk_str_image_usage_flag_bits);
 
 	PNT("present_modes(%u):", info->present_mode_count);
 	for (uint32_t i = 0; i < info->present_mode_count; i++) {
@@ -210,7 +210,7 @@ vk_print_surface_info(struct vk_bundle *vk, struct vk_surface_info *info, enum u
 
 #if defined(VK_KHR_get_surface_capabilities2) && defined(VK_KHR_shared_presentable_image)
 	PNT("shared_present_caps.sharedPresentSupportedUsageFlags:");
-	PRINT_BITS(info->shared_present_caps.sharedPresentSupportedUsageFlags, vk_image_usage_flag_string);
+	PRINT_BITS(info->shared_present_caps.sharedPresentSupportedUsageFlags, vk_str_image_usage_flag_bits);
 #endif
 
 	PNT("formats(%u):", info->format_count);

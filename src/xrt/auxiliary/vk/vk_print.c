@@ -35,7 +35,7 @@
 			if (!bit) {                                                                                    \
 				continue;                                                                              \
 			}                                                                                              \
-			const char *str = FUNC(bit, true);                                                             \
+			const char *str = FUNC##_or_null(bit);                                                         \
 			if (str != NULL) {                                                                             \
 				PNTT("%s", str);                                                                       \
 			} else {                                                                                       \
@@ -262,7 +262,7 @@ vk_print_swapchain_create_info(struct vk_bundle *vk, VkSwapchainCreateInfoKHR *i
 	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
 	P("VkSwapchainCreateInfoKHR:");
 	PNT("flags:");
-	PRINT_BITS(i->flags, vk_swapchain_create_flag_string);
+	PRINT_BITS(i->flags, vk_str_swapchain_create_flag_bits);
 	PNT("surface: %" PRIx64, (uint64_t)i->surface);
 	PNT("minImageCount: %u", i->minImageCount);
 	PNT("imageFormat: %s", vk_str_format(i->imageFormat));
@@ -270,11 +270,11 @@ vk_print_swapchain_create_info(struct vk_bundle *vk, VkSwapchainCreateInfoKHR *i
 	PNT("imageExtent: {%u, %u}", i->imageExtent.width, i->imageExtent.height);
 	PNT("imageArrayLayers: %u", i->imageArrayLayers);
 	PNT("imageUsage:");
-	PRINT_BITS(i->imageUsage, vk_image_usage_flag_string);
+	PRINT_BITS(i->imageUsage, vk_str_image_usage_flag_bits);
 	PNT("imageSharingMode: %s", vk_str_sharing_mode(i->imageSharingMode));
 	PNT("queueFamilyIndexCount: %u", i->queueFamilyIndexCount);
-	PNT("preTransform: %s", vk_surface_transform_flag_string(i->preTransform, false));
-	PNT("compositeAlpha: %s", vk_composite_alpha_flag_string(i->compositeAlpha, false));
+	PNT("preTransform: %s", vk_str_surface_transform_flag_bits(i->preTransform));
+	PNT("compositeAlpha: %s", vk_str_composite_alpha_flag_bits(i->compositeAlpha));
 	PNT("presentMode: %s", vk_str_present_mode(i->presentMode));
 	PNT("clipped: %s", i->clipped ? "VK_TRUE" : "VK_FALSE");
 	PNT("oldSwapchain: %" PRIx64, (uint64_t)i->oldSwapchain);
@@ -302,9 +302,9 @@ vk_print_display_surface_create_info(struct vk_bundle *vk,
 	PNT("displayMode: %" PRIx64, (uint64_t)i->displayMode);
 	PNT("planeIndex: %u", i->planeIndex);
 	PNT("planeStackIndex: %u", i->planeStackIndex);
-	PNT("transform: %s", vk_surface_transform_flag_string(i->transform, false));
+	PNT("transform: %s", vk_str_surface_transform_flag_bits(i->transform));
 	PNT("planeIndex: %f", i->globalAlpha);
-	PNT("alphaMode: %s", vk_display_plane_alpha_flag_string(i->alphaMode, false));
+	PNT("alphaMode: %s", vk_str_display_plane_alpha_flag_bits(i->alphaMode));
 	PNT("imageExtent: {%u, %u}", i->imageExtent.width, i->imageExtent.height);
 
 	U_LOG_IFL(log_level, vk->log_level, "%s", sink.buffer);
