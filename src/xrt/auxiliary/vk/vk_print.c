@@ -35,12 +35,8 @@
 			if (!bit) {                                                                                    \
 				continue;                                                                              \
 			}                                                                                              \
-			const char *str = FUNC##_or_null(bit);                                                         \
-			if (str != NULL) {                                                                             \
-				PNTT("%s", str);                                                                       \
-			} else {                                                                                       \
-				PNTT("0x%08x", bit);                                                                   \
-			}                                                                                              \
+			P("\n\t\t");                                                                                   \
+			FUNC(dg, bit);                                                                                 \
 		}                                                                                                      \
 	} while (false)
 
@@ -97,7 +93,8 @@ vk_print_result(
 		u_pp(dg, "%s failed: ", called_func);
 	}
 
-	u_pp(dg, "%s [%s:%i]", vk_str_result(ret), file, line);
+	vk_pp_result(dg, ret);
+	u_pp(dg, " [%s:%i]", file, line);
 
 	u_log(file, line, calling_func, level, "%s", sink.buffer);
 }
@@ -262,7 +259,7 @@ vk_print_swapchain_create_info(struct vk_bundle *vk, VkSwapchainCreateInfoKHR *i
 	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
 	P("VkSwapchainCreateInfoKHR:");
 	PNT("flags:");
-	PRINT_BITS(i->flags, vk_str_swapchain_create_flag_bits);
+	PRINT_BITS(i->flags, vk_pp_swapchain_create_flag_bits);
 	PNT("surface: %" PRIx64, (uint64_t)i->surface);
 	PNT("minImageCount: %u", i->minImageCount);
 	PNT("imageFormat: %s", vk_str_format(i->imageFormat));
@@ -270,11 +267,13 @@ vk_print_swapchain_create_info(struct vk_bundle *vk, VkSwapchainCreateInfoKHR *i
 	PNT("imageExtent: {%u, %u}", i->imageExtent.width, i->imageExtent.height);
 	PNT("imageArrayLayers: %u", i->imageArrayLayers);
 	PNT("imageUsage:");
-	PRINT_BITS(i->imageUsage, vk_str_image_usage_flag_bits);
+	PRINT_BITS(i->imageUsage, vk_pp_image_usage_flag_bits);
 	PNT("imageSharingMode: %s", vk_str_sharing_mode(i->imageSharingMode));
 	PNT("queueFamilyIndexCount: %u", i->queueFamilyIndexCount);
-	PNT("preTransform: %s", vk_str_surface_transform_flag_bits(i->preTransform));
-	PNT("compositeAlpha: %s", vk_str_composite_alpha_flag_bits(i->compositeAlpha));
+	PNT("preTransform: ");
+	vk_pp_surface_transform_flag_bits(dg, i->preTransform);
+	PNT("compositeAlpha: ");
+	vk_pp_composite_alpha_flag_bits(dg, i->compositeAlpha);
 	PNT("presentMode: %s", vk_str_present_mode(i->presentMode));
 	PNT("clipped: %s", i->clipped ? "VK_TRUE" : "VK_FALSE");
 	PNT("oldSwapchain: %" PRIx64, (uint64_t)i->oldSwapchain);
@@ -302,9 +301,11 @@ vk_print_display_surface_create_info(struct vk_bundle *vk,
 	PNT("displayMode: %" PRIx64, (uint64_t)i->displayMode);
 	PNT("planeIndex: %u", i->planeIndex);
 	PNT("planeStackIndex: %u", i->planeStackIndex);
-	PNT("transform: %s", vk_str_surface_transform_flag_bits(i->transform));
+	PNT("transform: ");
+	vk_pp_surface_transform_flag_bits(dg, i->transform);
 	PNT("planeIndex: %f", i->globalAlpha);
-	PNT("alphaMode: %s", vk_str_display_plane_alpha_flag_bits(i->alphaMode));
+	PNT("alphaMode: ");
+	vk_pp_display_plane_alpha_flag_bits(dg, i->alphaMode);
 	PNT("imageExtent: {%u, %u}", i->imageExtent.width, i->imageExtent.height);
 
 	U_LOG_IFL(log_level, vk->log_level, "%s", sink.buffer);

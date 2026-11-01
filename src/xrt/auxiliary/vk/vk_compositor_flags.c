@@ -56,8 +56,11 @@ check_feature(VkFormat format,
 
 	u_pp(dg, "vk_csci_get_image_usage_flags: ");
 	u_pp_xrt_swapchain_usage_bits(dg, usage);
-	u_pp(dg, " requested but %s not supported for format %s (%08x) (%08x)", vk_str_format_feature_flag_bits(flag),
-	     vk_str_format(format), format_features, flag);
+	u_pp(dg, " requested but ");
+	vk_pp_format_feature_flag_bits(dg, flag);
+	u_pp(dg, " not supported for format ");
+	vk_pp_format(dg, format);
+	u_pp(dg, " (%08x) (%08x)", format_features, flag);
 
 	U_LOG_E("%s", sink.buffer);
 
