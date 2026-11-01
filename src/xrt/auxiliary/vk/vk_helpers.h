@@ -27,6 +27,7 @@
 #include "util/u_extension_list.h"
 
 #include "vk/vk_print.h"
+#include "vk/vk_pretty_print.h"
 
 #include "os/os_threading.h"
 
@@ -396,57 +397,6 @@ vk_append_to_pnext_chain(VkBaseInStructure *head, VkBaseInStructure *new_struct)
 	new_struct->pNext = head->pNext;
 	head->pNext = new_struct;
 }
-
-
-/*
- *
- * Flag bits string functions.
- *
- */
-
-/*!
- * Returns the format feature flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
-XRT_CHECK_RESULT const char *
-vk_format_feature_flag_string(VkFormatFeatureFlagBits bits, bool null_on_unknown);
-
-/*!
- * Returns the swapchain create flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
-XRT_CHECK_RESULT const char *
-vk_swapchain_create_flag_string(VkSwapchainCreateFlagsKHR bits, bool null_on_unknown);
-
-/*!
- * Returns the image usage flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
-XRT_CHECK_RESULT const char *
-vk_image_usage_flag_string(VkImageUsageFlagBits bits, bool null_on_unknown);
-
-/*!
- * Returns the composite alpha flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
-XRT_CHECK_RESULT const char *
-vk_composite_alpha_flag_string(VkCompositeAlphaFlagBitsKHR bits, bool null_on_unknown);
-
-/*!
- * Returns the surface transform flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
-XRT_CHECK_RESULT const char *
-vk_surface_transform_flag_string(VkSurfaceTransformFlagBitsKHR bits, bool null_on_unknown);
-
-#ifdef VK_KHR_display
-/*!
- * Returns the display plane alpha flag if one valid bit is set,
- * if multiple bits are set, will return 'MULTIPLE BIT SET'.
- */
-XRT_CHECK_RESULT const char *
-vk_display_plane_alpha_flag_string(VkDisplayPlaneAlphaFlagBitsKHR bits, bool null_on_unknown);
-#endif
 
 
 /*
