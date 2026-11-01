@@ -116,7 +116,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkResult ret = vk->vkAllocateMemory(vk->device, &alloc_info, NULL, &device_memory);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "(%s) vkAllocateMemory: %s", caller_name, vk_result_string(ret));
+		VK_ERROR(vk, "(%s) vkAllocateMemory: %s", caller_name, vk_str_result(ret));
 		return ret;
 	}
 
@@ -125,7 +125,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	if (ret != VK_SUCCESS) {
 		// Clean up memory
 		vk->vkFreeMemory(vk->device, device_memory, NULL);
-		VK_ERROR(vk, "(%s) vkBindImageMemory: %s", caller_name, vk_result_string(ret));
+		VK_ERROR(vk, "(%s) vkBindImageMemory: %s", caller_name, vk_str_result(ret));
 		return ret;
 	}
 
@@ -180,7 +180,7 @@ create_image_simple(struct vk_bundle *vk,
 	VkImage image;
 	VkResult ret = vk->vkCreateImage(vk->device, &image_info, NULL, &image);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateImage: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateImage: %s", vk_str_result(ret));
 		// Nothing to cleanup
 		return ret;
 	}
@@ -310,7 +310,7 @@ vk_create_image_advanced(struct vk_bundle *vk,
 
 	ret = vk->vkCreateImage(vk->device, &image_info, NULL, &image);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateImage: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateImage: %s", vk_str_result(ret));
 		// Nothing to cleanup
 		return ret;
 	}
@@ -346,7 +346,7 @@ vk_create_image_advanced(struct vk_bundle *vk,
 	    NULL,                   // pAllocator
 	    &device_memory);        // pMemory
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateMemory: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkAllocateMemory: %s", vk_str_result(ret));
 		goto err_image;
 	}
 
@@ -356,7 +356,7 @@ vk_create_image_advanced(struct vk_bundle *vk,
 	    device_memory,           // memory
 	    0);                      // memoryOffset
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBindImageMemory: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkBindImageMemory: %s", vk_str_result(ret));
 		goto err_memory;
 	}
 
@@ -497,7 +497,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	VkImage image = VK_NULL_HANDLE;
 	ret = vk->vkCreateImage(vk->device, &vk_info, NULL, &image);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateImage: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateImage: %s", vk_str_result(ret));
 		// Nothing to cleanup
 		return ret;
 	}
@@ -526,7 +526,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 
 	ret = vk->vkGetAndroidHardwareBufferPropertiesANDROID(vk->device, image_native->handle, &ahb_props);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkGetAndroidHardwareBufferPropertiesANDROID: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkGetAndroidHardwareBufferPropertiesANDROID: %s", vk_str_result(ret));
 		return ret;
 	}
 
@@ -630,7 +630,7 @@ get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt
 	VkResult ret = vk->vkGetMemoryFdKHR(vk->device, &fd_info, &fd);
 	if (ret != VK_SUCCESS) {
 		// COMP_ERROR(c, "->image - vkGetMemoryFdKHR: %s",
-		//           vk_result_string(ret));
+		//           vk_str_result(ret));
 		return ret;
 	}
 
@@ -717,7 +717,7 @@ vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampl
 
 	ret = vk->vkCreateSampler(vk->device, &info, NULL, &sampler);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateSampler: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateSampler: %s", vk_str_result(ret));
 		return ret;
 	}
 
@@ -758,7 +758,7 @@ create_view(struct vk_bundle *vk,
 
 	ret = vk->vkCreateImageView(vk->device, &imageView, NULL, &view);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateImageView: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateImageView: %s", vk_str_result(ret));
 		return ret;
 	}
 

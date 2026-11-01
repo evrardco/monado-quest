@@ -91,7 +91,7 @@ create_blit_descriptor_set_layout(struct vk_bundle *vk, VkDescriptorSetLayout *o
 	    NULL,                              //
 	    &descriptor_set_layout);           //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateDescriptorSetLayout failed: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateDescriptorSetLayout failed: %s", vk_str_result(ret));
 		return ret;
 	}
 
@@ -128,7 +128,7 @@ create_blit_pipeline_layout(struct vk_bundle *vk,
 	    NULL,                         // pAllocator
 	    &pipeline_layout);            // pPipelineLayout
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreatePipelineLayout failed: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreatePipelineLayout failed: %s", vk_str_result(ret));
 		return ret;
 	}
 
@@ -166,7 +166,7 @@ ensure_scratch(struct comp_mirror_to_debug_gui *m, struct vk_bundle *vk)
 	    &m->bounce.mem,                 // out_device_memory
 	    &m->bounce.image);              // out_image
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_create_image_mutable_rgba: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_create_image_mutable_rgba: %s", vk_str_result(ret));
 		return false;
 	}
 
@@ -187,7 +187,7 @@ ensure_scratch(struct comp_mirror_to_debug_gui *m, struct vk_bundle *vk)
 	    subresource_range,      // subresource_range
 	    &m->bounce.unorm_view); // out_image_view
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_create_view_usage: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_create_view_usage: %s", vk_str_result(ret));
 		return false;
 	}
 
@@ -301,7 +301,7 @@ comp_mirror_init(struct comp_mirror_to_debug_gui *m,
 
 	ret = vk_cmd_pool_init(vk, &m->cmd_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_cmd_pool_init: %s", vk_str_result(ret));
 		comp_mirror_fini(m, vk);
 		return ret;
 	}
@@ -472,7 +472,7 @@ comp_mirror_do_blit(struct comp_mirror_to_debug_gui *m,
 	    m->blit.descriptor_set_layout, // descriptor_set_layout
 	    &descriptor_set);              // descriptor_set
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_create_descriptor_set: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_create_descriptor_set: %s", vk_str_result(ret));
 		return XRT_ERROR_VULKAN;
 	}
 
@@ -665,7 +665,7 @@ comp_mirror_do_blit(struct comp_mirror_to_debug_gui *m,
 	// Check results from submit.
 	if (ret != VK_SUCCESS) {
 		//! @todo Better handling of error?
-		VK_ERROR(vk, "vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked: %s", vk_str_result(ret));
 		return XRT_ERROR_VULKAN;
 	}
 

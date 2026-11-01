@@ -197,7 +197,7 @@ vk_print_surface_info(struct vk_bundle *vk, struct vk_surface_info *info, enum u
 
 	PNT("present_modes(%u):", info->present_mode_count);
 	for (uint32_t i = 0; i < info->present_mode_count; i++) {
-		PNTT("%s", vk_present_mode_string(info->present_modes[i]));
+		PNTT("%s", vk_str_present_mode(info->present_modes[i]));
 	}
 
 #if defined(VK_KHR_get_surface_capabilities2) && defined(VK_KHR_present_id2)
@@ -216,8 +216,7 @@ vk_print_surface_info(struct vk_bundle *vk, struct vk_surface_info *info, enum u
 	PNT("formats(%u):", info->format_count);
 	for (uint32_t i = 0; i < info->format_count; i++) {
 		VkSurfaceFormatKHR *f = &info->formats[i];
-		PNTT("[format = %s, colorSpace = %s]", vk_format_string(f->format),
-		     vk_color_space_string(f->colorSpace));
+		PNTT("[format = %s, colorSpace = %s]", vk_str_format(f->format), vk_str_color_space(f->colorSpace));
 	}
 
 	U_LOG_IFL(log_level, vk->log_level, "%s", sink.buffer);

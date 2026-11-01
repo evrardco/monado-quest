@@ -243,7 +243,7 @@ comp_window_wayland_create_surface(struct comp_window_wayland *w, VkSurfaceKHR *
 	    NULL,                            //
 	    &surface);                       //
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.base.c, "vkCreateWaylandSurfaceKHR: %s", vk_result_string(ret));
+		COMP_ERROR(w->base.base.c, "vkCreateWaylandSurfaceKHR: %s", vk_str_result(ret));
 		return ret;
 	}
 

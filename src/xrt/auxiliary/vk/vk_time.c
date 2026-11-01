@@ -87,7 +87,7 @@ vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t 
 		    timestamps,                         // pTimestamps
 		    &max_deviation);                    // pMaxDeviation
 		if (ret != VK_SUCCESS) {
-			VK_ERROR(vk, "vkGetCalibratedTimestampsKHR: %s", vk_result_string(ret));
+			VK_ERROR(vk, "vkGetCalibratedTimestampsKHR: %s", vk_str_result(ret));
 			return ret;
 		}
 	} else
@@ -102,7 +102,7 @@ vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t 
 		    timestamps,                         // pTimestamps
 		    &max_deviation);                    // pMaxDeviation
 		if (ret != VK_SUCCESS) {
-			VK_ERROR(vk, "vkGetCalibratedTimestampsEXT: %s", vk_result_string(ret));
+			VK_ERROR(vk, "vkGetCalibratedTimestampsEXT: %s", vk_str_result(ret));
 			return ret;
 		}
 	} else

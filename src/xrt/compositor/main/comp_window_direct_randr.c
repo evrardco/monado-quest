@@ -279,7 +279,7 @@ comp_window_direct_randr_get_output(struct comp_window_direct_randr *w, RROutput
 	VkDisplayKHR display;
 	ret = vk->vkGetRandROutputDisplayEXT(vk->physical_device, w->dpy, output, &display);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.base.c, "vkGetRandROutputDisplayEXT: %s", vk_result_string(ret));
+		COMP_ERROR(w->base.base.c, "vkGetRandROutputDisplayEXT: %s", vk_str_result(ret));
 		return VK_NULL_HANDLE;
 	}
 

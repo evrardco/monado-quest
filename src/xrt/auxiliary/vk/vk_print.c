@@ -97,7 +97,7 @@ vk_print_result(
 		u_pp(dg, "%s failed: ", called_func);
 	}
 
-	u_pp(dg, "%s [%s:%i]", vk_result_string(ret), file, line);
+	u_pp(dg, "%s [%s:%i]", vk_str_result(ret), file, line);
 
 	u_log(file, line, calling_func, level, "%s", sink.buffer);
 }
@@ -109,7 +109,7 @@ vk_print_device_info(struct vk_bundle *vk,
                      uint32_t gpu_index,
                      const char *title)
 {
-	const char *device_type_string = vk_physical_device_type_string(pdp->deviceType);
+	const char *device_type_string = vk_str_physical_device_type(pdp->deviceType);
 
 	U_LOG_IFL(log_level, vk->log_level,
 	          "%s"
@@ -265,17 +265,17 @@ vk_print_swapchain_create_info(struct vk_bundle *vk, VkSwapchainCreateInfoKHR *i
 	PRINT_BITS(i->flags, vk_swapchain_create_flag_string);
 	PNT("surface: %" PRIx64, (uint64_t)i->surface);
 	PNT("minImageCount: %u", i->minImageCount);
-	PNT("imageFormat: %s", vk_format_string(i->imageFormat));
-	PNT("imageColorSpace: %s", vk_color_space_string(i->imageColorSpace));
+	PNT("imageFormat: %s", vk_str_format(i->imageFormat));
+	PNT("imageColorSpace: %s", vk_str_color_space(i->imageColorSpace));
 	PNT("imageExtent: {%u, %u}", i->imageExtent.width, i->imageExtent.height);
 	PNT("imageArrayLayers: %u", i->imageArrayLayers);
 	PNT("imageUsage:");
 	PRINT_BITS(i->imageUsage, vk_image_usage_flag_string);
-	PNT("imageSharingMode: %s", vk_sharing_mode_string(i->imageSharingMode));
+	PNT("imageSharingMode: %s", vk_str_sharing_mode(i->imageSharingMode));
 	PNT("queueFamilyIndexCount: %u", i->queueFamilyIndexCount);
 	PNT("preTransform: %s", vk_surface_transform_flag_string(i->preTransform, false));
 	PNT("compositeAlpha: %s", vk_composite_alpha_flag_string(i->compositeAlpha, false));
-	PNT("presentMode: %s", vk_present_mode_string(i->presentMode));
+	PNT("presentMode: %s", vk_str_present_mode(i->presentMode));
 	PNT("clipped: %s", i->clipped ? "VK_TRUE" : "VK_FALSE");
 	PNT("oldSwapchain: %" PRIx64, (uint64_t)i->oldSwapchain);
 

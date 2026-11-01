@@ -216,7 +216,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 	    &display_count,                                    //
 	    &display_props);                                   //
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vk_enumerate_physical_device_display_properties: %s", vk_result_string(ret));
+		COMP_ERROR(ct->c, "vk_enumerate_physical_device_display_properties: %s", vk_str_result(ret));
 		return false;
 	}
 

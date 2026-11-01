@@ -171,7 +171,7 @@ comp_window_peek_create(struct comp_compositor *c)
 
 	VkResult ret = vk_cmd_pool_init(vk, &w->pool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_str_result(ret));
 		goto err_free;
 	}
 
@@ -179,7 +179,7 @@ comp_window_peek_create(struct comp_compositor *c)
 
 	ret = vk_cmd_pool_create_cmd_buffer(vk, &w->pool, &w->cmd);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vk_cmd_pool_create_cmd_buffer: %s", vk_result_string(ret));
+		COMP_ERROR(c, "vk_cmd_pool_create_cmd_buffer: %s", vk_str_result(ret));
 		goto err_pool;
 	}
 
@@ -307,7 +307,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	uint32_t current;
 	VkResult ret = comp_target_acquire(&w->base.base, &current);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "comp_target_acquire: %s", vk_result_string(ret));
+		COMP_ERROR(w->c, "comp_target_acquire: %s", vk_str_result(ret));
 	}
 
 	VkImage dst = w->base.base.images[current].handle;

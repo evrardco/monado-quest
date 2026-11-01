@@ -29,32 +29,63 @@ extern "C" {
  *
  */
 
-XRT_CHECK_RESULT const char *
-vk_result_string(VkResult code);
+/*!
+ * @name Enum string functions
+ *
+ * Returns a string of the enum value, or NULL if unknown. The versions without
+ * the `_or_null` suffix return 'UNKNOWN <TYPE>' instead of NULL.
+ *
+ * @ingroup aux_vk
+ * @{
+ */
 
 XRT_CHECK_RESULT const char *
-vk_object_type_string(VkObjectType type);
+vk_str_result_or_null(VkResult code);
 
 XRT_CHECK_RESULT const char *
-vk_physical_device_type_string(VkPhysicalDeviceType device_type);
+vk_str_object_type_or_null(VkObjectType type);
 
 XRT_CHECK_RESULT const char *
-vk_format_string(VkFormat code);
+vk_str_physical_device_type_or_null(VkPhysicalDeviceType device_type);
 
 XRT_CHECK_RESULT const char *
-vk_sharing_mode_string(VkSharingMode code);
+vk_str_format_or_null(VkFormat code);
 
 XRT_CHECK_RESULT const char *
-vk_present_mode_string(VkPresentModeKHR code);
+vk_str_sharing_mode_or_null(VkSharingMode code);
 
 XRT_CHECK_RESULT const char *
-vk_color_space_string(VkColorSpaceKHR code);
+vk_str_present_mode_or_null(VkPresentModeKHR code);
 
 XRT_CHECK_RESULT const char *
-vk_power_state_string(VkDisplayPowerStateEXT code);
+vk_str_color_space_or_null(VkColorSpaceKHR code);
 
 XRT_CHECK_RESULT const char *
-vk_queue_priority_string(VkQueueGlobalPriorityEXT priority);
+vk_str_display_power_state_or_null(VkDisplayPowerStateEXT code);
+
+XRT_CHECK_RESULT const char *
+vk_str_queue_global_priority_or_null(VkQueueGlobalPriorityEXT priority);
+
+/*!
+ * @}
+ */
+
+#define VK_STR_NO_NULL(NAME, TYPE, UNKNOWN_STR)                                                                        \
+	static inline const char *NAME(TYPE enumerate)                                                                 \
+	{                                                                                                              \
+		const char *str = NAME##_or_null(enumerate);                                                           \
+		return str != NULL ? str : UNKNOWN_STR;                                                                \
+	}
+
+VK_STR_NO_NULL(vk_str_result, VkResult, "UNKNOWN RESULT")
+VK_STR_NO_NULL(vk_str_object_type, VkObjectType, "UNKNOWN OBJECT TYPE")
+VK_STR_NO_NULL(vk_str_physical_device_type, VkPhysicalDeviceType, "UNKNOWN PHYSICAL DEVICE TYPE")
+VK_STR_NO_NULL(vk_str_format, VkFormat, "UNKNOWN FORMAT")
+VK_STR_NO_NULL(vk_str_sharing_mode, VkSharingMode, "UNKNOWN SHARING MODE")
+VK_STR_NO_NULL(vk_str_present_mode, VkPresentModeKHR, "UNKNOWN PRESENT MODE")
+VK_STR_NO_NULL(vk_str_color_space, VkColorSpaceKHR, "UNKNOWN COLOR SPACE")
+VK_STR_NO_NULL(vk_str_display_power_state, VkDisplayPowerStateEXT, "UNKNOWN DISPLAY POWER STATE")
+VK_STR_NO_NULL(vk_str_queue_global_priority, VkQueueGlobalPriorityEXT, "UNKNOWN QUEUE GLOBAL PRIORITY")
 
 
 /*
@@ -107,6 +138,8 @@ XRT_CHECK_RESULT const char *
 vk_display_plane_alpha_flag_string(VkDisplayPlaneAlphaFlagBitsKHR bits, bool null_on_unknown);
 #endif // VK_KHR_display
 
+
+#undef VK_STR_NO_NULL
 
 #ifdef __cplusplus
 }

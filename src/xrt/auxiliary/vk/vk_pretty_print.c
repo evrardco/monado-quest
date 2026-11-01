@@ -25,7 +25,7 @@
 	case r: return #r
 
 XRT_CHECK_RESULT const char *
-vk_result_string(VkResult code)
+vk_str_result_or_null(VkResult code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_SUCCESS);
@@ -127,12 +127,12 @@ vk_result_string(VkResult code)
 		ENUM_TO_STR(VK_PIPELINE_COMPILE_REQUIRED_EXT);
 		// VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT = VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT
 #endif
-	default: return "UNKNOWN RESULT";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_object_type_string(VkObjectType type)
+vk_str_object_type_or_null(VkObjectType type)
 {
 	switch (type) {
 		ENUM_TO_STR(VK_OBJECT_TYPE_UNKNOWN);
@@ -234,24 +234,24 @@ vk_object_type_string(VkObjectType type)
 #ifdef VK_EXT_shader_object
 		ENUM_TO_STR(VK_OBJECT_TYPE_SHADER_EXT);
 #endif
-	default: return "UNKNOWN OBJECT TYPE";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_physical_device_type_string(VkPhysicalDeviceType device_type)
+vk_str_physical_device_type_or_null(VkPhysicalDeviceType device_type)
 {
 	switch (device_type) {
 		ENUM_TO_STR(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
 		ENUM_TO_STR(VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU);
 		ENUM_TO_STR(VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU);
 		ENUM_TO_STR(VK_PHYSICAL_DEVICE_TYPE_CPU);
-	default: return "UNKNOWN PHYSICAL DEVICE TYPE";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_format_string(VkFormat code)
+vk_str_format_or_null(VkFormat code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_FORMAT_UNDEFINED);
@@ -505,22 +505,22 @@ vk_format_string(VkFormat code)
 		ENUM_TO_STR(VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT);
 		ENUM_TO_STR(VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT);
 #endif // VK_EXT_4444_formats
-	default: return "UNKNOWN FORMAT";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_sharing_mode_string(VkSharingMode code)
+vk_str_sharing_mode_or_null(VkSharingMode code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_SHARING_MODE_EXCLUSIVE);
 		ENUM_TO_STR(VK_SHARING_MODE_CONCURRENT);
-	default: return "UNKNOWN SHARING MODE";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_present_mode_string(VkPresentModeKHR code)
+vk_str_present_mode_or_null(VkPresentModeKHR code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_PRESENT_MODE_FIFO_KHR);
@@ -534,12 +534,12 @@ vk_present_mode_string(VkPresentModeKHR code)
 #elif defined(VK_EXT_present_mode_fifo_latest_ready)
 		ENUM_TO_STR(VK_PRESENT_MODE_FIFO_LATEST_READY_EXT);
 #endif
-	default: return "UNKNOWN MODE";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_color_space_string(VkColorSpaceKHR code)
+vk_str_color_space_or_null(VkColorSpaceKHR code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
@@ -562,30 +562,30 @@ vk_color_space_string(VkColorSpaceKHR code)
 #ifdef VK_AMD_display_native_hdr
 		ENUM_TO_STR(VK_COLOR_SPACE_DISPLAY_NATIVE_AMD);
 #endif
-	default: return "UNKNOWN COLOR SPACE";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_power_state_string(VkDisplayPowerStateEXT code)
+vk_str_display_power_state_or_null(VkDisplayPowerStateEXT code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_DISPLAY_POWER_STATE_OFF_EXT);
 		ENUM_TO_STR(VK_DISPLAY_POWER_STATE_SUSPEND_EXT);
 		ENUM_TO_STR(VK_DISPLAY_POWER_STATE_ON_EXT);
-	default: return "UNKNOWN MODE";
+	default: return NULL;
 	}
 }
 
 XRT_CHECK_RESULT const char *
-vk_queue_priority_string(VkQueueGlobalPriorityEXT priority)
+vk_str_queue_global_priority_or_null(VkQueueGlobalPriorityEXT priority)
 {
 	switch (priority) {
 		ENUM_TO_STR(VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT);
 		ENUM_TO_STR(VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT);
 		ENUM_TO_STR(VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT);
 		ENUM_TO_STR(VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT);
-	default: return "UNKNOWN QUEUE PRIORITY";
+	default: return NULL;
 	}
 }
 

@@ -161,7 +161,7 @@ comp_window_mswin_create_surface(struct comp_window_mswin *w, VkSurfaceKHR *out_
 	    NULL,                          //
 	    &surface);                     //
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.base.c, "vkCreateWin32SurfaceKHR: %s", vk_result_string(ret));
+		COMP_ERROR(w->base.base.c, "vkCreateWin32SurfaceKHR: %s", vk_str_result(ret));
 		return ret;
 	}
 
@@ -179,7 +179,7 @@ comp_window_mswin_init_swapchain(struct comp_target *ct, uint32_t width, uint32_
 
 	ret = comp_window_mswin_create_surface(cwm, &cwm->base.surface.handle);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "Failed to create surface '%s'!", vk_result_string(ret));
+		COMP_ERROR(ct->c, "Failed to create surface '%s'!", vk_str_result(ret));
 		return false;
 	}
 

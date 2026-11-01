@@ -66,7 +66,7 @@ fence_wait(struct xrt_compositor_fence *xcf, uint64_t timeout)
 		return XRT_TIMEOUT;
 	}
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkWaitForFences: %s", vk_str_result(ret));
 		return XRT_ERROR_VULKAN;
 	}
 

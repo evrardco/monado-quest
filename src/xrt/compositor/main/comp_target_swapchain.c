@@ -266,15 +266,15 @@ check_surface_present_mode(struct comp_target_swapchain *cts,
 	struct u_pp_sink_stack_only sink;
 	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
 
-	u_pp(dg, "Present mode %s not supported, available:", vk_present_mode_string(present_mode));
+	u_pp(dg, "Present mode %s not supported, available:", vk_str_present_mode(present_mode));
 
 	if (!image_usage_supported) {
 		u_pp(dg, "Requested image_usage 0x%x not supported for present mode %s.", image_usage,
-		     vk_present_mode_string(present_mode));
+		     vk_str_present_mode(present_mode));
 	}
 
 	for (uint32_t i = 0; i < info->present_mode_count; i++) {
-		u_pp(dg, "\n\t%s", vk_present_mode_string(info->present_modes[i]));
+		u_pp(dg, "\n\t%s", vk_str_present_mode(info->present_modes[i]));
 	}
 
 	COMP_ERROR(cts->base.c, "%s", sink.buffer);
@@ -369,10 +369,10 @@ done:
 	           "VkSurfaceFormatKHR"
 	           "\n\tpicked: [format = %s, colorSpace = %s]"
 	           "\n\tpreferred: [format = %s, colorSpace = %s]",
-	           vk_format_string(out_surface_format->format),          //
-	           vk_color_space_string(out_surface_format->colorSpace), //
-	           vk_format_string(create_info->formats[0]),             //
-	           vk_color_space_string(cts->preferred.color_space));    //
+	           vk_str_format(out_surface_format->format),          //
+	           vk_str_color_space(out_surface_format->colorSpace), //
+	           vk_str_format(create_info->formats[0]),             //
+	           vk_str_color_space(cts->preferred.color_space));    //
 
 	return true;
 }
@@ -453,7 +453,7 @@ check_surface_counter_caps(struct comp_target *ct, struct vk_bundle *vk, struct 
 
 	VkResult ret = vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT(vk->physical_device, cts->surface.handle, &caps);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilities2EXT: %s", vk_result_string(ret));
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilities2EXT: %s", vk_str_result(ret));
 		return false;
 	}
 
@@ -486,7 +486,7 @@ get_surface_counter_val(struct comp_target *ct)
 	} else if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: Swapchain out of date!");
 	} else {
-		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: %s", vk_result_string(ret));
+		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: %s", vk_str_result(ret));
 	}
 
 	return counter_val;
@@ -509,7 +509,7 @@ vblank_event_func(struct comp_target *ct, int64_t *out_timestamp_ns)
 	VkFence vblank_event_fence = VK_NULL_HANDLE;
 	ret = vk->vkRegisterDisplayEventEXT(vk->device, cts->display, &event_info, NULL, &vblank_event_fence);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkRegisterDisplayEventEXT: %s", vk_result_string(ret));
+		COMP_ERROR(ct->c, "vkRegisterDisplayEventEXT: %s", vk_str_result(ret));
 		return false;
 	}
 
@@ -553,7 +553,7 @@ vblank_event_func(struct comp_target *ct, int64_t *out_timestamp_ns)
 	} else if (ret == VK_TIMEOUT) {
 		COMP_WARN(ct->c, "vkWaitForFences: VK_TIMEOUT");
 	} else {
-		COMP_ERROR(ct->c, "vkWaitForFences: %s", vk_result_string(ret));
+		COMP_ERROR(ct->c, "vkWaitForFences: %s", vk_str_result(ret));
 	}
 
 	vk->vkDestroyFence(vk->device, vblank_event_fence, NULL);
@@ -671,7 +671,7 @@ target_init_semaphores(struct comp_target_swapchain *cts)
 
 	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &cts->base.semaphores.present_complete);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(cts->base.c, "vkCreateSemaphore: %s", vk_result_string(ret));
+		COMP_ERROR(cts->base.c, "vkCreateSemaphore: %s", vk_str_result(ret));
 	}
 
 	VK_NAME_SEMAPHORE(vk, cts->base.semaphores.present_complete,
@@ -680,7 +680,7 @@ target_init_semaphores(struct comp_target_swapchain *cts)
 	cts->base.semaphores.render_complete_is_timeline = false;
 	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &cts->base.semaphores.render_complete);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(cts->base.c, "vkCreateSemaphore: %s", vk_result_string(ret));
+		COMP_ERROR(cts->base.c, "vkCreateSemaphore: %s", vk_str_result(ret));
 	}
 
 	VK_NAME_SEMAPHORE(vk, cts->base.semaphores.render_complete, "comp_target_swapchain semaphore render complete");
@@ -737,7 +737,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	struct vk_surface_info info = {0};
 	ret = vk_surface_info_fill_in(vk, &info, cts->surface.handle);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_surface_info_fill_in: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_surface_info_fill_in: %s", vk_str_result(ret));
 		destroy_old(cts, old_swapchain_handle);
 		return;
 	}
@@ -882,7 +882,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	destroy_old(cts, old_swapchain_handle);
 
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkCreateSwapchainKHR: %s", vk_result_string(ret));
+		COMP_ERROR(ct->c, "vkCreateSwapchainKHR: %s", vk_str_result(ret));
 		return;
 	}
 

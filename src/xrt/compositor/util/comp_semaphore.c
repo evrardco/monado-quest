@@ -42,7 +42,7 @@ semaphore_wait(struct xrt_compositor_semaphore *xcsem, uint64_t value, uint64_t 
 		return XRT_TIMEOUT;
 	}
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkWaitSemaphores: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkWaitSemaphores: %s", vk_str_result(ret));
 		return XRT_ERROR_VULKAN;
 	}
 

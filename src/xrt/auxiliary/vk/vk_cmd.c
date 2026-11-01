@@ -27,7 +27,7 @@ vk_cmd_create_cmd_buffer_locked(struct vk_bundle *vk, VkCommandPool pool, VkComm
 
 	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info, &cmd_buffer);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_str_result(ret));
 		// Nothing to cleanup
 		return ret;
 	}
@@ -48,7 +48,7 @@ vk_cmd_create_and_begin_cmd_buffer_locked(struct vk_bundle *vk,
 
 	ret = vk_cmd_create_cmd_buffer_locked(vk, pool, &cmd_buffer);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_cmd_create_cmd_buffer_locked: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_cmd_create_cmd_buffer_locked: %s", vk_str_result(ret));
 		// Nothing to cleanup
 		return ret;
 	}
@@ -62,7 +62,7 @@ vk_cmd_create_and_begin_cmd_buffer_locked(struct vk_bundle *vk,
 	ret = vk->vkBeginCommandBuffer(cmd_buffer, &begin_info);
 
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBeginCommandBuffer: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkBeginCommandBuffer: %s", vk_str_result(ret));
 		goto err_buffer;
 	}
 
@@ -88,7 +88,7 @@ vk_cmd_submit_locked(
 	vk_queue_unlock(queue);
 
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkQueueSubmit: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkQueueSubmit: %s", vk_str_result(ret));
 	}
 
 	return ret;
@@ -108,7 +108,7 @@ vk_cmd_end_submit_wait_and_free_cmd_buffer_locked(struct vk_bundle *vk,
 	// Finish the command buffer first, the command buffer pool lock needs to be held.
 	ret = vk->vkEndCommandBuffer(cmd_buffer);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_str_result(ret));
 		goto out;
 	}
 
@@ -119,7 +119,7 @@ vk_cmd_end_submit_wait_and_free_cmd_buffer_locked(struct vk_bundle *vk,
 
 	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateFence: %s", vk_str_result(ret));
 		goto out;
 	}
 
@@ -135,7 +135,7 @@ vk_cmd_end_submit_wait_and_free_cmd_buffer_locked(struct vk_bundle *vk,
 
 	ret = vk_cmd_submit_locked(vk, queue, 1, &submitInfo, fence);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_cmd_pool_submit_locked: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_cmd_pool_submit_locked: %s", vk_str_result(ret));
 		goto out_fence;
 	}
 
@@ -150,7 +150,7 @@ vk_cmd_end_submit_wait_and_free_cmd_buffer_locked(struct vk_bundle *vk,
 	} while (wait_attempts < max_wait_attempts);
 
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkWaitForFences: %s", vk_str_result(ret));
 		goto out_fence;
 	}
 
