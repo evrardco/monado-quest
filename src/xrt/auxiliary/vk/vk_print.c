@@ -1079,26 +1079,3 @@ vk_display_plane_alpha_flag_string(VkDisplayPlaneAlphaFlagBitsKHR bits, bool nul
 	}
 }
 #endif
-
-XRT_CHECK_RESULT const char *
-xrt_swapchain_usage_flag_string(enum xrt_swapchain_usage_bits bits, bool null_on_unknown)
-{
-	switch (bits) {
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_COLOR);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_TRANSFER_SRC);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_TRANSFER_DST);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_SAMPLED);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT);
-		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT);
-	default:
-		if (bits == 0) {
-			return "XRT SWAPCHAIN USAGE: NO BITS SET";
-		} else if (bits & (bits - 1)) {
-			return "XRT SWAPCHAIN USAGE: MULTIPLE BITS SET";
-		} else {
-			return null_on_unknown ? NULL : "XRT SWAPCHAIN USAGE: UNKNOWN BIT";
-		}
-	}
-}

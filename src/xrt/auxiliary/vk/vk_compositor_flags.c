@@ -22,6 +22,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_pretty_print.h"
 
 #include "vk/vk_helpers.h"
 #include "vk/vk_compositor_flags.h"
@@ -46,13 +47,21 @@ check_feature(VkFormat format,
               VkFormatFeatureFlags format_features,
               VkFormatFeatureFlags flag)
 {
-	if ((format_features & flag) == 0) {
-		U_LOG_E("vk_csci_get_image_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
-		        xrt_swapchain_usage_flag_string(usage, false), vk_format_feature_flag_string(flag, false),
-		        vk_format_string(format), format_features, flag);
-		return false;
+	if ((format_features & flag) != 0) {
+		return true;
 	}
-	return true;
+
+	struct u_pp_sink_stack_only sink;
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+	u_pp(dg, "vk_csci_get_image_usage_flags: ");
+	u_pp_xrt_swapchain_usage_bits(dg, usage);
+	u_pp(dg, " requested but %s not supported for format %s (%08x) (%08x)",
+	     vk_format_feature_flag_string(flag, false), vk_format_string(format), format_features, flag);
+
+	U_LOG_E("%s", sink.buffer);
+
+	return false;
 }
 
 
