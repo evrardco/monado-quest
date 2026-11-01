@@ -14,6 +14,8 @@
 
 #include "vk/vk_pretty_print.h"
 
+#include <string.h>
+
 
 /*
  *
@@ -723,4 +725,79 @@ vk_str_display_plane_alpha_flag_bits_or_null(VkDisplayPlaneAlphaFlagBitsKHR bits
 	default: return NULL;
 	}
 }
+#endif
+
+
+/*
+ *
+ * Pretty print functions.
+ *
+ */
+
+#define DG(str) (dg.func(dg.ptr, str, strlen(str)))
+
+#define PP_OR_HEX(NAME, TYPE, PREFIX)                                                                                  \
+	void vk_pp_##NAME(u_pp_delegate_t dg, TYPE value)                                                              \
+	{                                                                                                              \
+		const char *might_be_null = vk_str_##NAME##_or_null(value);                                            \
+		if (might_be_null != NULL) {                                                                           \
+			DG(might_be_null);                                                                             \
+			return;                                                                                        \
+		}                                                                                                      \
+		u_pp(dg, PREFIX "_0x%08x", (uint32_t)value);                                                           \
+	}
+
+#define PP_FLAG_BITS_OR_HEX(NAME, TYPE, PREFIX)                                                                        \
+	void vk_pp_##NAME(u_pp_delegate_t dg, TYPE bits)                                                               \
+	{                                                                                                              \
+		const char *might_be_null = vk_str_##NAME##_or_null(bits);                                             \
+		if (might_be_null != NULL) {                                                                           \
+			DG(might_be_null);                                                                             \
+			return;                                                                                        \
+		}                                                                                                      \
+		uint32_t value = (uint32_t)bits;                                                                       \
+		if (value == 0) {                                                                                      \
+			DG(PREFIX ": NO BITS SET");                                                                    \
+		} else if ((value & (value - 1)) != 0) {                                                               \
+			u_pp(dg, PREFIX ": MULTIPLE BITS SET 0x%08x", value);                                          \
+		} else {                                                                                               \
+			u_pp(dg, PREFIX ": UNKNOWN BIT 0x%08x", value);                                                \
+		}                                                                                                      \
+	}
+
+void
+vk_pp_result(u_pp_delegate_t dg, VkResult ret)
+{
+	const char *might_be_null = vk_str_result_or_null(ret);
+	if (might_be_null != NULL) {
+		DG(might_be_null);
+		return;
+	}
+
+	/*
+	 * Invalid values handled below.
+	 */
+
+	if (ret < 0) {
+		u_pp(dg, "VK_ERROR_0x%08x", ret);
+	} else {
+		u_pp(dg, "VK_SUCCESS_0x%08x", ret);
+	}
+}
+
+PP_OR_HEX(object_type, VkObjectType, "VK_OBJECT_TYPE")
+PP_OR_HEX(physical_device_type, VkPhysicalDeviceType, "VK_PHYSICAL_DEVICE_TYPE")
+PP_OR_HEX(format, VkFormat, "VK_FORMAT")
+PP_OR_HEX(sharing_mode, VkSharingMode, "VK_SHARING_MODE")
+PP_OR_HEX(present_mode, VkPresentModeKHR, "VK_PRESENT_MODE")
+PP_OR_HEX(color_space, VkColorSpaceKHR, "VK_COLOR_SPACE")
+PP_OR_HEX(display_power_state, VkDisplayPowerStateEXT, "VK_DISPLAY_POWER_STATE")
+PP_OR_HEX(queue_global_priority, VkQueueGlobalPriorityEXT, "VK_QUEUE_GLOBAL_PRIORITY")
+PP_FLAG_BITS_OR_HEX(format_feature_flag_bits, VkFormatFeatureFlagBits, "VK_FORMAT_FEATURE")
+PP_FLAG_BITS_OR_HEX(swapchain_create_flag_bits, VkSwapchainCreateFlagBitsKHR, "VK_SWAPCHAIN_CREATE")
+PP_FLAG_BITS_OR_HEX(image_usage_flag_bits, VkImageUsageFlagBits, "VK_IMAGE_USAGE")
+PP_FLAG_BITS_OR_HEX(composite_alpha_flag_bits, VkCompositeAlphaFlagBitsKHR, "VK_COMPOSITE_ALPHA")
+PP_FLAG_BITS_OR_HEX(surface_transform_flag_bits, VkSurfaceTransformFlagBitsKHR, "VK_SURFACE_TRANSFORM")
+#ifdef VK_KHR_display
+PP_FLAG_BITS_OR_HEX(display_plane_alpha_flag_bits, VkDisplayPlaneAlphaFlagBitsKHR, "VK_DISPLAY_PLANE_ALPHA")
 #endif

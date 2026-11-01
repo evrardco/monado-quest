@@ -17,6 +17,8 @@
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_vulkan_includes.h"
 
+#include "util/u_pretty_print.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,9 +156,78 @@ VK_STR_FLAG_BITS_NO_NULL(vk_str_surface_transform_flag_bits, VkSurfaceTransformF
 VK_STR_FLAG_BITS_NO_NULL(vk_str_display_plane_alpha_flag_bits, VkDisplayPlaneAlphaFlagBitsKHR, "DISPLAY PLANE ALPHA")
 #endif // VK_KHR_display
 
-
 #undef VK_STR_FLAG_BITS_NO_NULL
 #undef VK_STR_NO_NULL
+
+
+/*
+ *
+ * Pretty print functions.
+ *
+ */
+
+/*!
+ * @name Pretty print functions
+ *
+ * Pretty prints the value to the delegate, unknown values are printed as hex
+ * with a prefix, like `VK_FORMAT_0x12345678`. The flag bits printers expect a
+ * single bit to be set, if no, multiple or an unknown bit is set they say so
+ * and print the hex value, like `VK_IMAGE_USAGE: UNKNOWN BIT 0x00000100`.
+ *
+ * @ingroup aux_vk
+ * @{
+ */
+
+void
+vk_pp_result(u_pp_delegate_t dg, VkResult ret);
+
+void
+vk_pp_object_type(u_pp_delegate_t dg, VkObjectType type);
+
+void
+vk_pp_physical_device_type(u_pp_delegate_t dg, VkPhysicalDeviceType device_type);
+
+void
+vk_pp_format(u_pp_delegate_t dg, VkFormat format);
+
+void
+vk_pp_sharing_mode(u_pp_delegate_t dg, VkSharingMode mode);
+
+void
+vk_pp_present_mode(u_pp_delegate_t dg, VkPresentModeKHR mode);
+
+void
+vk_pp_color_space(u_pp_delegate_t dg, VkColorSpaceKHR color_space);
+
+void
+vk_pp_display_power_state(u_pp_delegate_t dg, VkDisplayPowerStateEXT state);
+
+void
+vk_pp_queue_global_priority(u_pp_delegate_t dg, VkQueueGlobalPriorityEXT priority);
+
+void
+vk_pp_format_feature_flag_bits(u_pp_delegate_t dg, VkFormatFeatureFlagBits bits);
+
+void
+vk_pp_swapchain_create_flag_bits(u_pp_delegate_t dg, VkSwapchainCreateFlagBitsKHR bits);
+
+void
+vk_pp_image_usage_flag_bits(u_pp_delegate_t dg, VkImageUsageFlagBits bits);
+
+void
+vk_pp_composite_alpha_flag_bits(u_pp_delegate_t dg, VkCompositeAlphaFlagBitsKHR bits);
+
+void
+vk_pp_surface_transform_flag_bits(u_pp_delegate_t dg, VkSurfaceTransformFlagBitsKHR bits);
+
+#ifdef VK_KHR_display
+void
+vk_pp_display_plane_alpha_flag_bits(u_pp_delegate_t dg, VkDisplayPlaneAlphaFlagBitsKHR bits);
+#endif // VK_KHR_display
+
+/*!
+ * @}
+ */
 
 #ifdef __cplusplus
 }
