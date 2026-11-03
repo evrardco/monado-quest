@@ -284,3 +284,31 @@ static const struct t_constellation_tracker_led pssense_right_leds[] = {
         .id = 16,
     },
 };
+
+/*!
+ * Sony forgot to factor in the plastic when computing the original
+ * model, this is a fixup on top of that.
+ *
+ * This applies specifically to the right controller, and has X inverted for the left controller.
+ *
+ * Computed via a bundle adjustment of a large controller tracking dataset with CV1.
+ */
+static const struct xrt_vec3 pssense_led_emission_offsets[] = {
+    {0.000262, -0.001698, 0.000803},   // LED  0: +1.87 mm along normal
+    {0.000599, -0.001296, -0.000481},  // LED  1: +1.48 mm along normal
+    {0.001550, -0.001087, 0.000603},   // LED  2: +1.97 mm along normal
+    {0.001588, -0.000457, -0.000046},  // LED  3: +1.62 mm along normal
+    {0.001498, 0.000488, -0.000025},   // LED  4: +1.57 mm along normal
+    {0.001238, 0.000888, 0.000272},    // LED  5: +1.53 mm along normal
+    {-0.000983, -0.000921, 0.001300},  // LED  6: +1.84 mm along normal
+    {-0.001169, -0.000671, -0.000025}, // LED  7: +1.31 mm along normal
+    {-0.001315, -0.000090, -0.000021}, // LED  8: +1.28 mm along normal
+    {-0.001246, 0.000856, 0.000855},   // LED  9: +1.73 mm along normal
+    {-0.001071, 0.000414, -0.000405},  // LED 10: +1.16 mm along normal
+    {-0.000537, 0.001162, 0.000544},   // LED 11: +1.39 mm along normal
+    {-0.000372, 0.000718, -0.000602},  // LED 12: +0.94 mm along normal
+    {0.000399, 0.001257, 0.000289},    // LED 13: +1.30 mm along normal
+    {0.000331, 0.000033, -0.001030},   // LED 14: +1.04 mm along normal
+    {-0.000125, 0.000117, -0.001062},  // LED 15: +1.06 mm along normal
+    {-0.000648, 0.000286, -0.000970},  // LED 16: +1.20 mm along normal
+};

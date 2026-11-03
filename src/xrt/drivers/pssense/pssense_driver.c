@@ -1662,6 +1662,9 @@ pssense_create(struct xrt_prober *xp,
 	memcpy(pssense->led_model.leds, led_model,
 	       sizeof(struct t_constellation_tracker_led) * pssense->led_model.led_count);
 
+	// Prevent overflow
+	assert(pssense->led_model.led_count == ARRAY_SIZE(pssense_led_emission_offsets));
+
 	struct xrt_pose T_imu_led;
 	math_pose_invert(&pssense->tracking.T_led_imu, &T_imu_led);
 	for (size_t i = 0; i < pssense->led_model.led_count; i++) {
@@ -1670,6 +1673,15 @@ pssense_create(struct xrt_prober *xp,
 
 		struct xrt_vec3 led_position_in_imu_space;
 		struct xrt_vec3 led_normal_in_imu_space;
+
+		// Get the emission offset for this LED
+		struct xrt_vec3 emission_offset = pssense_led_emission_offsets[i];
+		// Swap for left hand
+		if (pssense->hand == XRT_HAND_LEFT) {
+			emission_offset.x = -emission_offset.x;
+		}
+		// Add the emission offset, fixing up an issue with Sony's original model.
+		math_vec3_accum(&emission_offset, &led_position_in_led_space);
 
 		math_pose_transform_point(&T_imu_led, &led_position_in_led_space, &led_position_in_imu_space);
 		math_quat_rotate_vec3(&T_imu_led.orientation, &led_normal_in_led_space, &led_normal_in_imu_space);
