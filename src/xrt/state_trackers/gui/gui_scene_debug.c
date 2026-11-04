@@ -1,5 +1,5 @@
 // Copyright 2019-2024, Collabora, Ltd.
-// Copyright 2024-2025, NVIDIA CORPORATION.
+// Copyright 2024-2026, NVIDIA CORPORATION.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -184,6 +184,10 @@ ensure_debug_record_created(void *ptr, struct draw_state *state)
 	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
 
 	if (usd->sink == NULL) {
+		if (ds->num_recrs >= ARRAY_SIZE(ds->recs)) {
+			return NULL;
+		}
+
 		struct debug_record *dr = &ds->recs[ds->num_recrs++];
 
 		dr->ptr = ptr;
