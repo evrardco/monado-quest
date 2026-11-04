@@ -207,15 +207,21 @@ correspondence_search_project_pose(struct correspondence_search *cs,
 
 	struct pose_metrics score;
 
+	bool success;
 	// Check how many LEDs have matching blobs in this pose, if there's enough we have a good match
 	// @todo: It would be better to be able to pass a list of undistorted blob points
 	if (mi->search_flags & CS_FLAG_HAVE_POSE_PRIOR) {
-		pose_metrics_evaluate_pose_with_prior(&score, pose, false, &mi->pose_prior, mi->pos_error_thresh,
-		                                      mi->rot_error_thresh, cs->blobs, cs->num_points, leds,
-		                                      model->device_id, cs->calib, NULL);
+		success = pose_metrics_evaluate_pose_with_prior(
+		    &score, pose, false, &mi->pose_prior, mi->pos_error_thresh, mi->rot_error_thresh, cs->blobs,
+		    cs->num_points, leds, model->device_id, cs->calib, NULL);
 	} else {
-		pose_metrics_evaluate_pose(&score, pose, cs->blobs, cs->num_points, leds, model->device_id, cs->calib,
-		                           NULL);
+		success = pose_metrics_evaluate_pose(&score, pose, cs->blobs, cs->num_points, leds, model->device_id,
+		                                     cs->calib, NULL);
+	}
+
+	// Evaluating pose failed
+	if (!success) {
+		return false;
 	}
 
 	/*

@@ -393,31 +393,37 @@ Camera::tryDevicePose(Device *device,
                       const std::optional<xrt_space_relation> &Tcv_cam_device_prior,
                       const xrt_pose &Tcv_cam_device_candidate)
 {
+	bool success;
 	pose_metrics score;
 	if (Tcv_cam_device_prior.has_value()) {
-		pose_metrics_evaluate_pose_with_prior(  //
-		    &score,                             //
-		    &Tcv_cam_device_candidate,          //
-		    false,                              //
-		    &Tcv_cam_device_prior.value().pose, //
-		    &device->prior_pos_error,           //
-		    &device->prior_rot_error,           //
-		    sample.blobs,                       //
-		    sample.blob_count,                  //
-		    &device->params.led_model,          //
-		    device->id,                         //
-		    &this->model,                       //
-		    NULL);                              //
+		success = pose_metrics_evaluate_pose_with_prior( //
+		    &score,                                      //
+		    &Tcv_cam_device_candidate,                   //
+		    false,                                       //
+		    &Tcv_cam_device_prior.value().pose,          //
+		    &device->prior_pos_error,                    //
+		    &device->prior_rot_error,                    //
+		    sample.blobs,                                //
+		    sample.blob_count,                           //
+		    &device->params.led_model,                   //
+		    device->id,                                  //
+		    &this->model,                                //
+		    NULL);                                       //
 	} else {
-		pose_metrics_evaluate_pose(    //
-		    &score,                    //
-		    &Tcv_cam_device_candidate, //
-		    sample.blobs,              //
-		    sample.blob_count,         //
-		    &device->params.led_model, //
-		    device->id,                //
-		    &this->model,              //
-		    NULL);                     //
+		success = pose_metrics_evaluate_pose( //
+		    &score,                           //
+		    &Tcv_cam_device_candidate,        //
+		    sample.blobs,                     //
+		    sample.blob_count,                //
+		    &device->params.led_model,        //
+		    device->id,                       //
+		    &this->model,                     //
+		    NULL);                            //
+	}
+
+	// The actual call itself failed.
+	if (!success) {
+		return false;
 	}
 
 	if (POSE_HAS_FLAGS(&score, POSE_MATCH_GOOD | POSE_MATCH_LED_IDS)) {
@@ -501,22 +507,27 @@ Camera::tryDeviceBlobRecovery(Device *device,
 	pose_metrics score;
 	// Evaluate the pose, using the prior if available
 	if (Tcv_cam_device_prior.has_value()) {
-		pose_metrics_evaluate_pose_with_prior(  //
-		    &score,                             //
-		    &Tcv_cam_device,                    //
-		    true,                               //
-		    &Tcv_cam_device_prior.value().pose, //
-		    &device->prior_pos_error,           //
-		    &device->prior_rot_error,           //
-		    sample.blobs,                       //
-		    sample.blob_count,                  //
-		    &device->params.led_model,          //
-		    device->id,                         //
-		    &this->model,                       //
+		success = pose_metrics_evaluate_pose_with_prior( //
+		    &score,                                      //
+		    &Tcv_cam_device,                             //
+		    true,                                        //
+		    &Tcv_cam_device_prior.value().pose,          //
+		    &device->prior_pos_error,                    //
+		    &device->prior_rot_error,                    //
+		    sample.blobs,                                //
+		    sample.blob_count,                           //
+		    &device->params.led_model,                   //
+		    device->id,                                  //
+		    &this->model,                                //
 		    NULL);
 	} else {
-		pose_metrics_evaluate_pose(&score, &Tcv_cam_device, sample.blobs, sample.blob_count,
-		                           &device->params.led_model, device->id, &this->model, NULL);
+		success = pose_metrics_evaluate_pose(&score, &Tcv_cam_device, sample.blobs, sample.blob_count,
+		                                     &device->params.led_model, device->id, &this->model, NULL);
+	}
+
+	// If the evaluate failed entirely, this isn't a success.
+	if (!success) {
+		return false;
 	}
 
 	/*

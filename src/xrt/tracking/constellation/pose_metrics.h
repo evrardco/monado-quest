@@ -135,6 +135,7 @@ pose_metrics_evaluate_pose(struct pose_metrics *score,
                            struct camera_model *calib,
                            struct pose_rect *out_bounds);
 
+XRT_CHECK_RESULT
 bool
 pose_metrics_evaluate_pose_with_prior(struct pose_metrics *score,
                                       const struct xrt_pose *pose,

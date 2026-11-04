@@ -187,6 +187,7 @@ get_visible_leds(const struct xrt_pose *T_cam_obj,
 	struct xrt_vec2 led_out_points[MAX_OBJECT_LEDS] = {0};
 
 	// Project LEDs into our image space
+	//! @todo We should just drop single individual LEDs that are outside screen space, not the whole pose.
 	if (!project_led_points(led_model, calib, T_cam_obj, led_out_positions, led_out_points)) {
 		return false;
 	}
@@ -265,6 +266,7 @@ get_visible_leds_bounds(struct pose_metrics_visible_led_info *visible_led_points
                         struct pose_rect *bounds)
 {
 	if (num_visible_leds == 0) {
+		(*bounds) = (struct pose_rect){0};
 		return false;
 	}
 
@@ -307,12 +309,12 @@ pose_metrics_match_pose_to_blobs(const struct xrt_pose *pose,
 	match_info->degenerate_solution = false;
 
 	if (!get_visible_leds(pose, led_model, calib, match_info->visible_leds, &match_info->num_visible_leds)) {
-		U_LOG_W("No visible leds found");
+		U_LOG_D("Failed to get visible LEDs");
 		return false;
 	}
-
+	// No valid bounds, don't try to match to blobs.
 	if (!get_visible_leds_bounds(match_info->visible_leds, match_info->num_visible_leds, &match_info->bounds)) {
-		U_LOG_E("Failed to get leds bounds");
+		U_LOG_D("Failed to get LED bounds");
 		return false;
 	}
 
