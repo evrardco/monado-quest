@@ -1,5 +1,5 @@
 // Copyright 2019, Collabora, Ltd.
-// Copyright 2024-2025, NVIDIA CORPORATION.
+// Copyright 2024-2026, NVIDIA CORPORATION.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -27,6 +27,7 @@ DEBUG_GET_ONCE_OPTION(nvidia_display, "XRT_COMPOSITOR_FORCE_NVIDIA_DISPLAY", NUL
 DEBUG_GET_ONCE_NUM_OPTION(vk_display, "XRT_COMPOSITOR_FORCE_VK_DISPLAY", -1)
 DEBUG_GET_ONCE_BOOL_OPTION(force_xcb, "XRT_COMPOSITOR_FORCE_XCB", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_wayland, "XRT_COMPOSITOR_FORCE_WAYLAND", false)
+DEBUG_GET_ONCE_BOOL_OPTION(force_debug_image, "XRT_COMPOSITOR_FORCE_DEBUG_IMAGE", false)
 DEBUG_GET_ONCE_NUM_OPTION(force_gpu_index, "XRT_COMPOSITOR_FORCE_GPU_INDEX", -1)
 DEBUG_GET_ONCE_NUM_OPTION(force_client_gpu_index, "XRT_COMPOSITOR_FORCE_CLIENT_GPU_INDEX", -1)
 DEBUG_GET_ONCE_NUM_OPTION(desired_mode, "XRT_COMPOSITOR_DESIRED_MODE", -1)
@@ -206,5 +207,9 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 		// HMD screen tends to be much larger then monitors.
 		s->preferred.width /= 2;
 		s->preferred.height /= 2;
+	}
+
+	if (debug_get_bool_option_force_debug_image()) {
+		s->target_identifier = "debug_image";
 	}
 }
