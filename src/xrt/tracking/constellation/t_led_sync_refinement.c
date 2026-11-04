@@ -619,6 +619,8 @@ t_led_sync_refinement_destroy(struct t_led_sync_refinement *refinement)
 		return;
 	}
 
+	u_var_remove_root(refinement);
+
 	os_mutex_destroy(&refinement->lock);
 }
 
