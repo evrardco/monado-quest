@@ -1097,7 +1097,7 @@ integrateToTimestampHistory(const double world_gravity_mag,
 		map_vec3(relation.angular_velocity) =
 		    (Q_world_imu * (map_vec3_f64(sample.gyro_rad_secs) - gyro_bias)).cast<float>();
 
-		m_relation_history_push(relation_history, &relation, pose_ns);
+		m_relation_history_push_or_update(relation_history, &relation, pose_ns);
 	}
 
 	map_vec3(inout_solve.Tcv_world_device.position) = T_world_device.cast<float>();
