@@ -10,8 +10,6 @@
  * @ingroup aux_math
  */
 
-#include "m_relation_history.h"
-
 #include "xrt/xrt_defines.h"
 
 #include "math/m_api.h"
@@ -25,6 +23,8 @@
 #include "util/u_trace_marker.h"
 #include "util/u_template_historybuf.hpp"
 
+#include "m_relation_history.h"
+
 #include <memory>
 #include <algorithm>
 #include <cstring>
@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <mutex>
+
 
 using namespace xrt::auxiliary::util;
 namespace os = xrt::auxiliary::os;
@@ -49,8 +50,90 @@ struct m_relation_history
 {
 	HistoryBuffer<struct relation_history_entry, BufLen> impl;
 	mutable os::Mutex mutex;
+
+	bool
+	pushOrUpdateLocked(const struct relation_history_entry &rhe, bool allow_update)
+	{
+		// if we aren't empty, we can compare against the latest timestamp.
+		if (this->impl.empty() || rhe.timestamp > this->impl.back().timestamp) {
+			/*
+			 * Everything explodes if the timestamps in relation_history aren't monotonically increasing. If
+			 * we get a timestamp that's before the most recent timestamp in the buffer, don't put it
+			 * in the history.
+			 */
+			this->impl.push_back(rhe);
+			return true;
+		}
+
+		// Don't do any updating if it's not enabled
+		if (!allow_update) {
+			return false;
+		}
+
+		for (auto it = this->impl.end(); it != this->impl.begin();) {
+			--it;
+			auto &item = *it;
+
+			// Poses are monotonic, so if we're newer than this item than it will never reach
+			if (rhe.timestamp > item.timestamp) {
+				return false;
+			}
+
+			// If that timestamp is in here, update the pose
+			if (item.timestamp == rhe.timestamp) {
+				item = rhe;
+				return true;
+			}
+		}
+
+		return false;
+	}
 };
 
+static void
+m_relation_history_estimate_motion(struct xrt_space_relation const &old_relation,
+                                   struct xrt_space_relation const &new_relation,
+                                   float dt,
+                                   struct xrt_vec3 &out_linear_velocity,
+                                   struct xrt_vec3 &out_angular_velocity,
+                                   enum xrt_space_relation_flags &out_flags)
+{
+	assert(dt != 0.0f);
+
+	enum xrt_space_relation_flags shared_flags =
+	    (enum xrt_space_relation_flags)(old_relation.relation_flags & new_relation.relation_flags);
+
+	// Don't do anything if the new relation already has linear velocity
+	if (new_relation.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) {
+		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+		out_linear_velocity = new_relation.linear_velocity;
+	}
+	// If both relations have position data, estimate linear velocity
+	else if (shared_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
+		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+
+		out_linear_velocity = (new_relation.pose.position - old_relation.pose.position) / dt;
+	}
+
+	// Don't do anything if the new relation already has angular velocity
+	if (new_relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) {
+		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
+		out_angular_velocity = new_relation.angular_velocity;
+	}
+	// If both relations have orientation data, estimate angular velocity
+	else if (shared_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
+		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
+
+		math_quat_finite_difference(&old_relation.pose.orientation, &new_relation.pose.orientation, dt,
+		                            &out_angular_velocity);
+	}
+}
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
 
 void
 m_relation_history_create(struct m_relation_history **rh_ptr)
@@ -66,21 +149,31 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
 	struct relation_history_entry rhe;
 	rhe.relation = *in_relation;
 	rhe.timestamp = timestamp;
-	bool ret = false;
 	std::unique_lock<os::Mutex> lock(rh->mutex);
 	try {
-		// if we aren't empty, we can compare against the latest timestamp.
-		if (rh->impl.empty() || rhe.timestamp > rh->impl.back().timestamp) {
-			// Everything explodes if the timestamps in relation_history aren't monotonically increasing. If
-			// we get a timestamp that's before the most recent timestamp in the buffer, don't put it
-			// in the history.
-			rh->impl.push_back(rhe);
-			ret = true;
-		}
+		return rh->pushOrUpdateLocked(rhe, false);
 	} catch (std::exception const &e) {
 		U_LOG_E("Caught exception: %s", e.what());
+		return false;
 	}
-	return ret;
+}
+
+bool
+m_relation_history_push_or_update(struct m_relation_history *rh,
+                                  struct xrt_space_relation const *in_relation,
+                                  int64_t timestamp)
+{
+	XRT_TRACE_MARKER();
+	struct relation_history_entry rhe;
+	rhe.relation = *in_relation;
+	rhe.timestamp = timestamp;
+	std::unique_lock<os::Mutex> lock(rh->mutex);
+	try {
+		return rh->pushOrUpdateLocked(rhe, true);
+	} catch (std::exception const &e) {
+		U_LOG_E("Caught exception: %s", e.what());
+		return false;
+	}
 }
 
 enum m_relation_history_result
@@ -180,45 +273,6 @@ m_relation_history_get(const struct m_relation_history *rh,
 	} catch (std::exception const &e) {
 		U_LOG_E("Caught exception: %s", e.what());
 		return M_RELATION_HISTORY_RESULT_INVALID;
-	}
-}
-
-static void
-m_relation_history_estimate_motion(struct xrt_space_relation const &old_relation,
-                                   struct xrt_space_relation const &new_relation,
-                                   float dt,
-                                   struct xrt_vec3 &out_linear_velocity,
-                                   struct xrt_vec3 &out_angular_velocity,
-                                   enum xrt_space_relation_flags &out_flags)
-{
-	assert(dt != 0.0f);
-
-	enum xrt_space_relation_flags shared_flags =
-	    (enum xrt_space_relation_flags)(old_relation.relation_flags & new_relation.relation_flags);
-
-	// Don't do anything if the new relation already has linear velocity
-	if (new_relation.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) {
-		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
-		out_linear_velocity = new_relation.linear_velocity;
-	}
-	// If both relations have position data, estimate linear velocity
-	else if (shared_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
-		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
-
-		out_linear_velocity = (new_relation.pose.position - old_relation.pose.position) / dt;
-	}
-
-	// Don't do anything if the new relation already has angular velocity
-	if (new_relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) {
-		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
-		out_angular_velocity = new_relation.angular_velocity;
-	}
-	// If both relations have orientation data, estimate angular velocity
-	else if (shared_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
-		out_flags = (enum xrt_space_relation_flags)(out_flags | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
-
-		math_quat_finite_difference(&old_relation.pose.orientation, &new_relation.pose.orientation, dt,
-		                            &out_angular_velocity);
 	}
 }
 
