@@ -427,7 +427,7 @@ comp_mirror_is_ready_and_active(struct comp_mirror_to_debug_gui *m,
 	double diff_ms = time_ns_to_ms_f(predicted_display_time_ns - m->last_push_ts_ns);
 
 	// Completely unscientific - lower values probably works fine too.
-	// I figure we don't have very many 500Hz displays and this woorks great for 120-144hz
+	// I figure we don't have very many 500Hz displays and this works great for 120-144hz
 	double slop_ms = 2;
 
 	if (diff_ms < m->target_frame_time_ms - slop_ms) {
