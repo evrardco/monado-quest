@@ -24,6 +24,35 @@ of the OpenXR API made by Khronos.
 The project is primarily developed on GNU/Linux, but also runs on Android and Windows.
 "Monado" has no specific meaning and is just a name.
 
+## DISCLAIMER
+
+**This fork was vibe coded.** The Quest Link port and the fixes on the `oculus-quest-2` branch were
+written almost entirely by an AI coding assistant (Claude), steered and tested by a single user on a
+single machine (Fedora, AMD RX 6700 XT, Meta Quest 2 over USB). The code has not been reviewed by the
+Monado developers or by the authors of the code it builds on. It is not affiliated with or endorsed
+by Meta or the Monado project. Expect bugs; use it at your own risk.
+
+VR can make you feel sick when a pose, a field of view or the timing is wrong. Try new builds with
+the headset in your hand before wearing it, and take it off at once if something feels off.
+
+## This fork: Quest Link for the Meta Quest 2
+
+This branch adds a Quest Link (USB) driver to upstream Monado, so a Meta Quest 2 can be used for PC VR
+on Linux without Meta's software. It is a port, not original work:
+
+* **Quest Link driver** (`src/xrt/drivers/quest_link`): from Max Thomas' (shinyquagsire23) macOS
+  Quest Link fork of Monado, <https://github.com/shinyquagsire23/monado>, branch `macos_ql_merge`,
+  which reverse-engineered Meta's XRSP protocol. Its files also carry copyright lines for Collabora,
+  Ltd., Jan Schmidt, Philipp Zabel and Jakob Bornecrantz, partly inherited from the Monado drivers
+  the fork started from (see each file's header).
+* **Video encoders** (`src/xrt/drivers/wivrn`): from [WiVRn](https://github.com/WiVRn/WiVRn) by
+  Guillaume Meunier and Patrick Nicolas, through the same fork. They are GPLv3: building the driver
+  needs `-DXRT_ENABLE_GPL=ON`, and the resulting build is GPL.
+* **Monado itself**: Collabora, Ltd. and the Monado contributors,
+  <https://gitlab.freedesktop.org/monado/monado>.
+
+What changed in the port is described in the commit messages on this branch.
+
 ## Monado source tree
 
 * `src/xrt/include` - headers that define the internal interfaces of Monado.
