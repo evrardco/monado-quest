@@ -292,6 +292,124 @@ if(XRT_BUILD_DRIVER_REMOTE)
 	list(APPEND ENABLED_HEADSET_DRIVERS remote)
 endif()
 
+if(XRT_BUILD_DRIVER_QUEST_LINK)
+	# The video encoders Quest Link uses, taken from WiVRn (GPLv3) by shinyquagsire23's fork: only the
+	# encoder side, not WiVRn's own streaming driver.
+	find_package(nlohmann_json REQUIRED)
+	add_library(
+		drv_ql_encoder STATIC
+		wivrn/configuration.cpp
+		wivrn/encoder_settings.cpp
+		wivrn/video_encoder.cpp
+		wivrn/xrt_cast.cpp
+		wivrn/external/rs.c
+		)
+	configure_file(wivrn/wivrn_config.h.in wivrn/wivrn_config.h)
+	target_include_directories(drv_ql_encoder PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wivrn ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(drv_ql_encoder INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/wivrn)
+	target_link_libraries(
+		drv_ql_encoder
+		PRIVATE xrt-interfaces aux_util aux_os aux_vk nlohmann_json::nlohmann_json
+		PUBLIC xrt-external-openxr
+		)
+	if(XRT_HAVE_FFMPEG)
+		target_sources(
+			drv_ql_encoder PRIVATE wivrn/ffmpeg/VideoEncoderFFMPEG.cpp wivrn/ffmpeg/VideoEncoderVA.cpp
+			                       wivrn/ffmpeg/ffmpeg_helper.cpp
+			)
+		target_link_libraries(drv_ql_encoder PRIVATE PkgConfig::FFMPEG)
+		# Keyframe (IDR) interval of the VAAPI encoder, in frames (QL_VAAPI_GOP overrides at run time).
+		# ffmpeg's default of 120 = one big keyframe per second at 120 Hz, which missed its frame slot
+		# every second; see VideoEncoderVA.cpp.
+		set(QL_VAAPI_GOP_DEFAULT
+		    432000
+		    CACHE STRING "Quest Link VAAPI keyframe interval in frames (must be > 1)"
+			)
+		target_compile_definitions(drv_ql_encoder PRIVATE QL_VAAPI_GOP_DEFAULT=${QL_VAAPI_GOP_DEFAULT})
+		# libva directly, for vaSyncSurface (see VideoEncoderVA::PushFrame): without it, white noise
+		# flashes under GPU load.
+		pkg_check_modules(QL_LIBVA IMPORTED_TARGET libva)
+		if(QL_LIBVA_FOUND)
+			target_compile_definitions(drv_ql_encoder PRIVATE QL_HAVE_LIBVA)
+			target_link_libraries(drv_ql_encoder PRIVATE PkgConfig::QL_LIBVA)
+		else()
+			message(WARNING "libva not found: the VAAPI encoder can't wait for its input copy (noise flashes under load)")
+		endif()
+	endif()
+	if(XRT_HAVE_X264)
+		include(CompileGLSL)
+		target_sources(drv_ql_encoder PRIVATE wivrn/video_encoder_x264.cpp wivrn/yuv_converter.cpp)
+		file(GLOB QL_YUV_SHADERS CONFIGURE_DEPENDS "wivrn/shaders/*.glsl")
+		target_sources(drv_ql_encoder PRIVATE ${QL_YUV_SHADERS})
+		compile_glsl(drv_ql_encoder ${QL_YUV_SHADERS})
+		target_link_libraries(drv_ql_encoder PRIVATE PkgConfig::X264)
+	endif()
+
+	capnp_generate_cpp(
+		quest_link_proto_srcs
+		quest_link_proto_headers
+		quest_link/protos/Audio.capnp
+		quest_link/protos/CameraStream.capnp
+		quest_link/protos/Haptic.capnp
+		quest_link/protos/HostInfo.capnp
+		quest_link/protos/Logging.capnp
+		quest_link/protos/Mesh.capnp
+		quest_link/protos/Pose.capnp
+		quest_link/protos/RuntimeIPC.capnp
+		quest_link/protos/Slice.capnp
+		)
+	add_library(
+		drv_quest_link STATIC
+		quest_link/ql_comp_target.cpp
+		quest_link/ql_controller.cpp
+		quest_link/ql_hands.cpp
+		quest_link/ql_hmd.cpp
+		quest_link/ql_prober.cpp
+		quest_link/ql_system.cpp
+		quest_link/ql_utils.cpp
+		quest_link/ql_xrsp.cpp
+		quest_link/ql_xrsp_audio.cpp
+		quest_link/ql_xrsp_hands.cpp
+		quest_link/ql_xrsp_hostinfo.cpp
+		quest_link/ql_xrsp_ipc.cpp
+		quest_link/ql_xrsp_logging.cpp
+		quest_link/ql_xrsp_pose.cpp
+		quest_link/ql_xrsp_segmented_pkt.cpp
+		quest_link/ql_xrsp_topic.cpp
+		quest_link/ql_xrsp_types.cpp
+		${quest_link_proto_srcs}
+		)
+	target_include_directories(
+		drv_quest_link SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/quest_link/ ${CMAKE_CURRENT_BINARY_DIR}
+		                              ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../compositor
+		)
+	target_link_libraries(
+		drv_quest_link
+		PRIVATE xrt-interfaces
+			aux_util
+			aux_math
+			aux_os
+			aux_vk
+			comp_main
+			xrt-external-cjson
+			xrt-external-tinyceres
+			CapnProto::capnp
+			${LIBUSB1_LIBRARIES}
+			drv_ql_encoder
+		)
+	target_include_directories(drv_quest_link PRIVATE ${LIBUSB1_INCLUDE_DIRS})
+	# PC audio to the headset (ql_xrsp_audio.cpp): captures a PulseAudio/PipeWire device. Optional:
+	# without libpulse-simple the sound stays on the PC.
+	pkg_check_modules(QL_PULSE_SIMPLE IMPORTED_TARGET libpulse-simple)
+	if(QL_PULSE_SIMPLE_FOUND)
+		target_compile_definitions(drv_quest_link PRIVATE QL_HAVE_PULSE)
+		target_link_libraries(drv_quest_link PRIVATE PkgConfig::QL_PULSE_SIMPLE)
+	else()
+		message(WARNING "quest_link: libpulse-simple not found: no audio to the headset")
+	endif()
+	list(APPEND ENABLED_HEADSET_DRIVERS quest-link)
+endif()
+
 if(XRT_BUILD_DRIVER_ROKID)
 	add_library(drv_rokid STATIC rokid/rokid_hmd.c rokid/rokid_interface.h)
 	target_link_libraries(

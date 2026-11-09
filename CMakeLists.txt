@@ -30,6 +30,8 @@ set(_default_absolute ON)
 if(WIN32)
 	set(_default_absolute OFF)
 endif()
+# GPL code (the Quest Link driver's WiVRn video encoders, x264): off by default, the rest of Monado is BSL-1.0.
+option(XRT_ENABLE_GPL "Enable GPL-licensed components (the Quest Link driver); makes the build GPL" OFF)
 option(
 	XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH
 	"Use the absolute path to the runtime in the installed manifest, rather than a bare filename."
@@ -123,6 +125,8 @@ if(NOT OpenCV_FOUND)
 endif()
 
 find_package(Libusb1 MODULE)
+# Quest Link (drivers/quest_link): its protocol messages are Cap'n Proto.
+find_package(CapnProto CONFIG)
 find_package(JPEG MODULE)
 find_package(realsense2 CONFIG)
 find_package(rerun_sdk CONFIG)
@@ -199,6 +203,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 		pkg_search_module(LIBDRM IMPORTED_TARGET libdrm)
+		# Quest Link's video encoders (drivers/wivrn): VAAPI through ffmpeg, x264 on the CPU (GPL).
+		pkg_check_modules(FFMPEG IMPORTED_TARGET libavcodec libavutil libavfilter)
+		if(XRT_ENABLE_GPL)
+			pkg_check_modules(X264 IMPORTED_TARGET x264)
+		endif()
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
@@ -346,6 +355,9 @@ option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
 option_with_deps(XRT_HAVE_HIDAPI "Enable libhidapi (used for PSVR)" DEPENDS HIDAPI_FOUND)
 option_with_deps(XRT_HAVE_JPEG "Enable jpeg code (used for some video drivers)" DEPENDS JPEG_FOUND)
 option_with_deps(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" DEPENDS LIBUSB1_FOUND)
+option_with_deps(XRT_HAVE_CAPNPROTO "Enable Cap'n Proto (used for Quest Link)" DEPENDS CAPNP_EXECUTABLE)
+option_with_deps(XRT_HAVE_FFMPEG "Enable ffmpeg video encoding (Quest Link)" DEPENDS FFMPEG_FOUND)
+option_with_deps(XRT_HAVE_X264 "Enable x264 software video encoding (Quest Link, GPL)" DEPENDS X264_FOUND XRT_ENABLE_GPL)
 option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOUND XRT_HAVE_LIBUSB)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
 option_with_deps(XRT_HAVE_OPENVR "Enable OpenVR support" DEPENDS OPENVR_FOUND)
@@ -378,6 +390,11 @@ option_with_deps(XRT_BUILD_DRIVER_RIFT "Enable Oculus Rift (DK2/CV1) device driv
 option_with_deps(XRT_BUILD_DRIVER_RIFT_SENSOR "Enable Oculus Rift Sensor (DK2/CV1) device driver" DEPENDS XRT_BUILD_DRIVER_RIFT XRT_BUILD_DRIVER_UVC XRT_HAVE_LIBUSB)
 option_with_deps(XRT_BUILD_DRIVER_RIFT_S "Enable Oculus Rift S device driver" DEPENDS XRT_HAVE_V4L2)
 option_with_deps(XRT_BUILD_DRIVER_ROKID "Enable Rokid driver" DEPENDS "XRT_HAVE_LIBUSB")
+# Quest Link over USB (shinyquagsire23's XRSP driver, ported from github.com/shinyquagsire23/monado
+# branch macos_ql_merge). Its video encoders come from WiVRn and are GPLv3: XRT_ENABLE_GPL=ON makes the
+# whole build GPL.
+option_with_deps(XRT_BUILD_DRIVER_QUEST_LINK "Enable Meta Quest Link device driver (GPL)"
+	DEPENDS XRT_HAVE_LIBUSB XRT_HAVE_CAPNPROTO XRT_ENABLE_GPL "XRT_HAVE_FFMPEG OR XRT_HAVE_X264" XRT_HAVE_VULKAN)
 option_with_deps(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE "Enable SteamVR Lighthouse driver" DEPENDS XRT_HAVE_LINUX XRT_MODULE_AUX_VIVE XRT_MODULE_AUX_HTC)
 option_with_deps(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" DEPENDS SURVIVE_FOUND XRT_MODULE_AUX_VIVE XRT_MODULE_AUX_HTC)
 option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS LeapV2_FOUND)
@@ -513,6 +530,7 @@ list(
 	"STEAMVR_LIGHTHOUSE"
 	"SOLARXR"
 	"PIMAX_P2"
+	"QUEST_LINK"
 	)
 
 # Package name needs to be known by the native code itself.
@@ -637,6 +655,9 @@ message(STATUS "#    HIDAPI:          ${XRT_HAVE_HIDAPI}")
 message(STATUS "#    JPEG:            ${XRT_HAVE_JPEG}")
 message(STATUS "#    LIBBSD:          ${XRT_HAVE_LIBBSD}")
 message(STATUS "#    LIBUSB:          ${XRT_HAVE_LIBUSB}")
+message(STATUS "#    CAPNPROTO:       ${XRT_HAVE_CAPNPROTO}")
+message(STATUS "#    FFMPEG:          ${XRT_HAVE_FFMPEG}")
+message(STATUS "#    X264:            ${XRT_HAVE_X264}")
 message(STATUS "#    LIBUVC:          ${XRT_HAVE_LIBUVC}")
 message(STATUS "#    ONNXRUNTIME:     ${XRT_HAVE_ONNXRUNTIME}")
 message(STATUS "#    OPENCV:          ${XRT_HAVE_OPENCV}")
@@ -765,6 +786,7 @@ message(STATUS "#    DRIVER_RIFT:                 ${XRT_BUILD_DRIVER_RIFT}")
 message(STATUS "#    DRIVER_RIFT_SENSOR:          ${XRT_BUILD_DRIVER_RIFT_SENSOR}")
 message(STATUS "#    DRIVER_RIFT_S:               ${XRT_BUILD_DRIVER_RIFT_S}")
 message(STATUS "#    DRIVER_ROKID:                ${XRT_BUILD_DRIVER_ROKID}")
+message(STATUS "#    DRIVER_QUEST_LINK:           ${XRT_BUILD_DRIVER_QUEST_LINK}")
 message(STATUS "#    DRIVER_SIMULATED:            ${XRT_BUILD_DRIVER_SIMULATED}")
 message(STATUS "#    DRIVER_SIMULAVR:             ${XRT_BUILD_DRIVER_SIMULAVR}")
 message(STATUS "#    DRIVER_SURVIVE:              ${XRT_BUILD_DRIVER_SURVIVE}")

@@ -63,6 +63,14 @@
 DEBUG_GET_ONCE_BOOL_OPTION(exit_when_idle, "IPC_EXIT_WHEN_IDLE", false)
 DEBUG_GET_ONCE_NUM_OPTION(exit_when_idle_delay_ms, "IPC_EXIT_WHEN_IDLE_DELAY_MS", 5000)
 DEBUG_GET_ONCE_LOG_OPTION(ipc_log, "IPC_LOG", U_LOGGING_INFO)
+/*
+ * Create the system (devices and compositor) at startup instead of on the first client's request, and
+ * only then open the socket: a Quest Link HMD only gets its display once Link is accepted in the
+ * headset, and its compositor waits for that, so with lazy creation the first client blocked inside
+ * xrCreateInstance until then (SteamVR's driver watchdog aborted after 20 s). With this the socket
+ * appearing means "ready", as the Quest VR start scripts expect.
+ */
+DEBUG_GET_ONCE_BOOL_OPTION(eager_system, "IPC_EAGER_SYSTEM", false)
 
 /*
  * "XRT_NO_STDIN" option disables stdin and prevents monado-service from terminating.
@@ -364,6 +372,15 @@ init_all(struct ipc_server *s,
 
 	xret = xrt_instance_create(NULL, &s->xinst);
 	IPC_CHK_WITH_GOTO(s, xret, "xrt_instance_create", error);
+
+	if (debug_get_bool_option_eager_system()) {
+		bool available = false;
+		xret = ipc_server_init_system_if_available_locked(s, NULL, &available);
+		IPC_CHK_WITH_GOTO(s, xret, "ipc_server_init_system_if_available_locked", error);
+		if (!available) {
+			IPC_WARN(s, "IPC_EAGER_SYSTEM: no system available at startup, creating it on demand");
+		}
+	}
 
 	ret = ipc_server_mainloop_init(&s->ml, ismi->socket_filename, s->no_stdin);
 	if (ret < 0) {

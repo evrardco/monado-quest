@@ -52,6 +52,10 @@
 #include "psvr2/psvr2_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_QUEST_LINK
+#include "quest_link/ql_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_ROKID
 #include "rokid/rokid_interface.h"
 #endif
@@ -206,6 +210,16 @@ struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_DRIVER_ROKID
     {ROKID_VID, ROKID_PID, rokid_found, "Rokid Air or Max", "rokid"},
 #endif // XRT_BUILD_DRIVER_ROKID
+
+#ifdef XRT_BUILD_DRIVER_QUEST_LINK
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_XRSP_PID, ql_found, "Quest Link (XRSP)", "quest_link"},
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_MTP_XRSP_PID, ql_found, "Quest Link (MTP, XRSP)", "quest_link"},
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_MTP_XRSP_ADB_PID, ql_found, "Quest Link (MTP, XRSP, ADB)", "quest_link"},
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_XRSP_ADB_PID, ql_found, "Quest Link (XRSP, ADB)", "quest_link"},
+#define QL_ENTRY(pid) {META_PLATFORMS_TECH_LLC_VID, pid, ql_found, "Quest Link (composite)", "quest_link"},
+    QUEST_XRSP_COMPOSITE_PIDS(QL_ENTRY)
+#undef QL_ENTRY
+#endif // XRT_BUILD_DRIVER_QUEST_LINK
 
 #ifdef XRT_BUILD_DRIVER_PSVR2
     {PSVR2_VID, PSVR2_PID, psvr2_found, "PlayStation VR2 HMD", "psvr2"},

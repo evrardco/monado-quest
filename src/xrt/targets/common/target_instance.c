@@ -11,6 +11,7 @@
 #include "xrt/xrt_space.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_config_build.h"
+#include "xrt/xrt_config_drivers.h" // XRT_BUILD_DRIVER_QUEST_LINK (without it the #ifdef below was silently off)
 #include "xrt/xrt_config_os.h"
 
 #include "os/os_time.h"
@@ -21,6 +22,10 @@
 
 #include "b_system.h"
 #include "b_app_policy.h"
+
+#ifdef XRT_BUILD_DRIVER_QUEST_LINK
+#include "quest_link/ql_interface.h"
+#endif
 
 #ifdef XRT_MODULE_COMPOSITOR_MAIN
 #include "main/comp_main_interface.h"
@@ -123,7 +128,14 @@ t_instance_create_system(struct xrt_instance *xinst,
 
 #ifdef XRT_MODULE_COMPOSITOR_MAIN
 	if (xret == XRT_SUCCESS && xsysc == NULL) {
-		xret = comp_main_create_system_compositor(head, NULL, NULL, &xsysc);
+		const struct comp_target_factory *ctf = NULL;
+#ifdef XRT_BUILD_DRIVER_QUEST_LINK
+		ctf = ql_compositor_target_factory(head); // NULL unless the head is a Quest
+		if (ctf != NULL) {
+			U_LOG_I("Quest Link: the compositor streams to the headset");
+		}
+#endif
+		xret = comp_main_create_system_compositor(head, ctf, NULL, &xsysc);
 	}
 #else
 	if (!use_null) {

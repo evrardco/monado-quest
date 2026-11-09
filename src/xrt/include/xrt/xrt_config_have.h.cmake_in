@@ -17,7 +17,9 @@
 #cmakedefine XRT_HAVE_D3D12
 #cmakedefine XRT_HAVE_DBUS
 #cmakedefine XRT_HAVE_DXGI
+#cmakedefine XRT_HAVE_CAPNPROTO
 #cmakedefine XRT_HAVE_EGL
+#cmakedefine XRT_HAVE_FFMPEG
 #cmakedefine XRT_HAVE_GST
 #cmakedefine XRT_HAVE_HIDAPI
 #cmakedefine XRT_HAVE_JPEG
@@ -28,6 +30,7 @@
 #cmakedefine XRT_HAVE_OPENCV
 #cmakedefine XRT_HAVE_OPENGL
 #cmakedefine XRT_HAVE_OPENGLES
+#cmakedefine XRT_HAVE_X264
 #cmakedefine XRT_HAVE_OPENVR
 #cmakedefine XRT_HAVE_PERCETTO
 #cmakedefine XRT_HAVE_SDL2
