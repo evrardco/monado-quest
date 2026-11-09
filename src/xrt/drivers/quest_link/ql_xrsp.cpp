@@ -275,6 +275,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
 
     if (do_reset) {
         QUEST_LINK_INFO("Reset?");
+        host->last_usb_reset_ns = os_monotonic_get_ns();
         ret = libusb_reset_device(host->dev);
         if (ret == LIBUSB_ERROR_NOT_FOUND) {
             // We're reconnecting anyhow.
@@ -758,6 +759,8 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
         QUEST_LINK_ERROR("Failed to send %x bytes (sent %x)", data_size, sent_len);
         QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)r));
 
+        if (r == LIBUSB_ERROR_TIMEOUT)
+            host->send_timeouts_since_read++;
         if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_TIMEOUT) {
            host->usb_valid = false;
            host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
@@ -1557,6 +1560,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
         if (read_len > 0) {
             usb_stats.in_xfers++;
             usb_stats.in_bytes += read_len;
+            host->send_timeouts_since_read = 0; // the headset is listening
         }
         if (r != 0 || !read_len) {
             if (r != LIBUSB_ERROR_TIMEOUT) {
@@ -2005,7 +2009,16 @@ ql_xrsp_read_thread(void *ptr)
 
         if (xrsp_ts_ns(host) - host->last_read_ns > 1000000000 && host->pairing_state == PAIRINGSTATE_WAIT_FIRST && !host->usb_valid)
         {
-            ql_xrsp_usb_init(host, false);
+            // After the cable came out and back in, the reopened headset didn't read anything: every
+            // first send timed out, reopen, again, and Link couldn't even be launched in the headset
+            // (2026-11-09). Only the USB reset a fresh start does brings its Link side back, and this
+            // path never reset. So: reset when the last attempt's send timed out with no word from the
+            // headset since, at most every 5 s (a missing headset isn't reset in a loop).
+            const bool reset = host->send_timeouts_since_read > 0 &&
+                               os_monotonic_get_ns() - host->last_usb_reset_ns > 5 * U_TIME_1S_IN_NS;
+            if (reset)
+                QUEST_LINK_INFO("The headset didn't answer the reopened connection: resetting USB");
+            ql_xrsp_usb_init(host, reset);
             host->last_read_ns = xrsp_ts_ns(host);
         }
 

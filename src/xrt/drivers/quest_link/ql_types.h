@@ -167,6 +167,10 @@ typedef struct ql_xrsp_host
     int invite_session_type;   // session type requested by the last INVITE (1 = basic/pairing, 3 = streaming), 0 if unknown
     int active_session_type;   // session the follow-up ACK/CODEGEN_ACK/PAIRING_ACK messages belong to
     int64_t last_init_ns;      // when ql_xrsp_usb_init last ran (monotonic)
+    // Sends that timed out since the headset last sent us anything, and when the last USB reset
+    // was: a reopened device the headset doesn't read needs a reset (ql_xrsp_read_thread).
+    int send_timeouts_since_read;
+    int64_t last_usb_reset_ns;
     int64_t start_ns;
 
     // Echo state
